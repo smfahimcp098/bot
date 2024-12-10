@@ -26,7 +26,7 @@ module.exports = {
     shortDescription: "Generate and select images using Niji V5.",
     longDescription: "Generates four images based on a prompt and allows the user to select one.",
     category: "AI",
-    guide: "{pn} <prompt> [--ar <ratio>] [--s <style>]"
+    guide: "{pn} <prompt> [--ar <ratio>] [--s <style>]",
   },
 
   onStart: async function ({ message, args, api, event }) {
@@ -38,6 +38,7 @@ module.exports = {
       let ratio = "1:1";
       let style = "";
 
+      // Parsing arguments for prompt, ratio, and style
       for (let i = 0; i < args.length; i++) {
         if (args[i].startsWith("--ar=") || args[i].startsWith("--ratio=")) {
           ratio = args[i].split("=")[1];
@@ -63,15 +64,16 @@ module.exports = {
 
       const styledPrompt = `${prompt}, ${styleMap[style] || ""}`.trim();
       const params = { prompt: styledPrompt, ratio };
-      const ok = "xyz"; // Update with your domain or URL shortener if needed
-      const urls = [
-        `https://smfahim.${ok}/fluxpro`,
-        `https://smfahim.${ok}/fluxpro`,
-        `https://smfahim.${ok}/fluxpro`,
-        `https://smfahim.${ok}/fluxpro`
-      ];
-      const cacheFolderPath = path.join(__dirname, "/tmp");
 
+      const ok = "xyz"; // Update your domain dynamically
+      const urls = [
+        `https://smfahim.${ok}/fluxpro/gen`,
+        `https://smfahim.${ok}/fluxpro/gen`,
+        `https://smfahim.${ok}/fluxpro/gen`,
+        `https://smfahim.${ok}/fluxpro/gen`,
+      ];
+
+      const cacheFolderPath = path.join(__dirname, "/tmp");
       if (!fs.existsSync(cacheFolderPath)) {
         fs.mkdirSync(cacheFolderPath);
       }
@@ -88,7 +90,7 @@ module.exports = {
           const imageResponse = await axios({
             url: imageURL,
             method: "GET",
-            responseType: "stream"
+            responseType: "stream",
           });
 
           imageResponse.data.pipe(writer);
@@ -100,11 +102,13 @@ module.exports = {
         })
       );
 
-      const loadedImages = await Promise.all(images.map(img => loadImage(img)));
+      const loadedImages = await Promise.all(images.map((img) => loadImage(img)));
       const width = loadedImages[0].width;
       const height = loadedImages[0].height;
       const canvas = createCanvas(width * 2, height * 2);
       const ctx = canvas.getContext("2d");
+
+      // Combining all four images into one
       ctx.drawImage(loadedImages[0], 0, 0, width, height);
       ctx.drawImage(loadedImages[1], width, 0, width, height);
       ctx.drawImage(loadedImages[2], 0, height, width, height);
@@ -119,7 +123,7 @@ module.exports = {
 
       const reply = await message.reply({
         body: `Select an image by responding with 1, 2, 3, or 4.\n\nTime taken: ${timeTaken} seconds`,
-        attachment: fs.createReadStream(combinedImagePath)
+        attachment: fs.createReadStream(combinedImagePath),
       });
 
       const data = {
@@ -127,14 +131,14 @@ module.exports = {
         messageID: reply.messageID,
         images: images,
         combinedImage: combinedImagePath,
-        author: event.senderID
+        author: event.senderID,
       };
 
       global.GoatBot.onReply.set(reply.messageID, data);
 
       setTimeout(() => {
         global.GoatBot.onReply.delete(reply.messageID);
-        images.forEach(image => fs.unlinkSync(image));
+        images.forEach((image) => fs.unlinkSync(image));
         fs.unlinkSync(combinedImagePath);
       }, 300000);
 
@@ -154,11 +158,11 @@ module.exports = {
 
       const selectedImagePath = Reply.images[index - 1];
       await message.reply({
-        attachment: fs.createReadStream(selectedImagePath)
+        attachment: fs.createReadStream(selectedImagePath),
       });
     } catch (error) {
       console.error("Error:", error.message);
       message.reply("❌ | Failed to send selected image.");
     }
-  }
+  },
 };
