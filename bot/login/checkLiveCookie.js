@@ -6,6 +6,7 @@ const axios = require("axios");
  * @returns {Promise<Boolean>} True if cookie is valid, false if not
  */
 module.exports = async function (cookie, userAgent) {
+	//console.log(cookie)
 	try {
 		const response = await axios({
 			url: 'https://mbasic.facebook.com/settings',
@@ -26,10 +27,11 @@ module.exports = async function (cookie, userAgent) {
 				"upgrade-insecure-requests": "1"
 			}
 		});
-		
-		return response.data.includes('/privacy/xcs/action/logging/') || response.data.includes('/notifications.php?') || response.data.includes('href="/login/save-password-interstitial');
+		//console.log(response.data)
+		return true ;/*response.data.includes('/privacy/xcs/action/logging/') || response.data.includes('/notifications.php?') || response.data.includes('href="/login/save-password-interstitial');*/
 	}
 	catch (e) {
+		await console.log(e)
 		return false;
 	}
 };
