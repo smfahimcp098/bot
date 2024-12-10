@@ -42,8 +42,9 @@ module.exports = {
     try {
       const prompt = args.join(' ');
       const world = `&ratio=${ratio}`;
-      const team = `gen?prompt=${encodeURIComponent(prompt)}${world}`;
-      const imageURL = `https://team-calyx.onrender.com/${team}`;
+      const team = `xl31?prompt=${encodeURIComponent(prompt)}${world}`;
+				const o = "xyz";
+      const imageURL = `https://smfahim.${o}/${team}`;
       const attachment = await global.utils.getStreamFromURL(imageURL);
 
       const endTime = new Date().getTime();
