@@ -59,7 +59,7 @@ module.exports = {
         await download({ videoUrl, message, event });
       }
     } catch (error) {
-      message.reaction("❌", event.messageID);
+      //message.reaction("❌", event.messageID);
       console.error("onChat Error:", error);
     }
   }
