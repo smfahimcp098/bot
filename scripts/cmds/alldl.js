@@ -5,7 +5,7 @@ module.exports = {
   config: {
     name: "alldl",
     aliases: ["download"],
-    version: "1.5",
+    version: "1.6",
     author: "Team Calyx",
     countDown: 5,
     role: 0,
