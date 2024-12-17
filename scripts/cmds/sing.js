@@ -1,8 +1,7 @@
 const axios = require("axios");
 const fs = require("fs");
 
-const ok = "xyz";
-const apiBaseUrl = `https://smfahim.${ok}/sing`;
+const apiBaseUrl = `https://smfahim.xyz/sing`;
 
 module.exports = {
   config: {
