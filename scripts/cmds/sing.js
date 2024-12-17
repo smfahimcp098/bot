@@ -1,13 +1,13 @@
 const axios = require("axios");
 const fs = require("fs");
-const yts = require("yt-search");
 
-const downloadBaseUrl = "https://team-calyx.onrender.com/ytb?url=";
+const ok = "xyz";
+const apiBaseUrl = `https://smfahim.${ok}/sing`;
 
 module.exports = {
   config: {
     name: "sing",
-    version: "1.1",
+    version: "1.4",
     aliases: ["song"],
     author: "Team Calyx",
     countDown: 5,
@@ -17,102 +17,65 @@ module.exports = {
     },
     category: "media",
     guide: {
-      en: "{pn} <search term>: search YouTube and download selected audio"
+      en: "{pn} <search term or URL>: search YouTube and download audio"
     }
   },
 
   onStart: async ({ api, args, event }) => {
-    if (args.length < 1) {
-      return api.sendMessage("❌ Please use the format '/sing <search term>'.", event.threadID, event.messageID);
+    let videoURL = args.join(" ");
+
+    if (!videoURL) {
+      if (event.messageReply && event.messageReply.body) {
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        const foundURLs = event.messageReply.body.match(urlRegex);
+        if (foundURLs && foundURLs.length > 0) {
+          videoURL = foundURLs[0];
+        } else {
+          return api.sendMessage("❌ No URL found in the replied message. Please provide a valid URL.", event.threadID, event.messageID);
+        }
+      } else {
+        return api.sendMessage("❌ Please provide a search term or URL.", event.threadID, event.messageID);
+      }
     }
 
-    const searchTerm = args.join(" ");
+    const isUrl = videoURL.startsWith("http://") || videoURL.startsWith("https://");
 
     try {
-      const searchResults = await yts(searchTerm);
-      const videos = searchResults.videos.slice(0, 6);
+      api.setMessageReaction("⏳", event.messageID, () => {}, true);
 
-      if (videos.length === 0) {
-        return api.sendMessage(`⭕ No results found for: ${searchTerm}`, event.threadID, event.messageID);
+      let response;
+      if (isUrl) {
+        response = await axios.get(`${apiBaseUrl}?url=${encodeURIComponent(videoURL)}`);
+      } else {
+        response = await axios.get(`${apiBaseUrl}?search=${encodeURIComponent(videoURL)}`);
       }
 
-      let msg = "";
-      videos.forEach((video, index) => {
-        msg += `${index + 1}. ${video.title}\nDuration: ${video.timestamp}\nChannel: ${video.author.name}\n\n`;
-      });
+      const { link, title } = response.data;
 
-      api.sendMessage(
+      if (!link) {
+        api.setMessageReaction("❌", event.messageID, () => {}, true);
+      }
+
+      const audioPath = `ytb_audio_${Date.now()}.mp3`;
+
+      const audioResponse = await axios.get(link, { responseType: "arraybuffer" });
+      fs.writeFileSync(audioPath, Buffer.from(audioResponse.data));
+      api.setMessageReaction("✅", event.messageID, () => {}, true);
+      const titleBody = `• Title: ${title}`;
+      await api.sendMessage(
         {
-          body: msg + "Reply with a number to select.",
-          attachment: await Promise.all(videos.map(video => fahimcalyx(video.thumbnail, `thumbnail_${video.videoId}.jpg`)))
+          body: titleBody,
+          attachment: fs.createReadStream(audioPath)
         },
         event.threadID,
-        (err, info) => {
-          global.GoatBot.onReply.set(info.messageID, {
-            commandName: "sing",
-            messageID: info.messageID,
-            author: event.senderID,
-            videos,
-          });
+        () => {
+          fs.unlinkSync(audioPath);
         },
         event.messageID
       );
     } catch (error) {
       console.error(error);
-      return api.sendMessage("❌ Failed to search YouTube.", event.threadID, event.messageID);
-    }
-  },
-
-  onReply: async ({ event, api, Reply }) => {
-    console.log("Reply Object:", Reply); // ডিবাগিং
-
-    const choice = parseInt(event.body);
-    if (isNaN(choice) || choice <= 0 || choice > Reply.videos.length) {
-      return api.sendMessage("❌ Please enter a valid number.", event.threadID, event.messageID);
-    }
-
-    const selectedVideo = Reply.videos[choice - 1];
-    const videoUrl = selectedVideo.url;
-
-    try {
-      const { data } = await axios.get(`${downloadBaseUrl}${videoUrl}`);
-      
-      if (!data.audioUrl || !data.audioUrl.endsWith(".mp3")) {
-        return api.sendMessage("❌ Could not retrieve an MP3 file. Please try again with a different search.", event.threadID, event.messageID);
-      }
-
-      const audioUrl = data.audioUrl;
-      const audioPath = `ytb_audio_${selectedVideo.videoId}.mp3`;
-      const audioResponse = await axios.get(audioUrl, { responseType: "arraybuffer" });
-      fs.writeFileSync(audioPath, Buffer.from(audioResponse.data));
-
-      await api.unsendMessage(Reply.messageID);
-
-      await api.sendMessage(
-        {
-          body: `📥 Audio download successful:\n• Title: ${selectedVideo.title}\n• Channel: ${selectedVideo.author.name}`,
-          attachment: fs.createReadStream(audioPath)
-        },
-        event.threadID,
-        () => fs.unlinkSync(audioPath),
-        event.messageID
-      );
-    } catch (e) {
-      console.error(e);
-      return api.sendMessage("❌ Failed to download.", event.threadID, event.messageID);
+      api.setMessageReaction("❌", event.messageID, () => {}, true);
     }
   }
 };
-
-async function fahimcalyx(url, pathName) {
-  try {
-    const response = await axios.get(url, { responseType: "stream" });
-    response.data.pipe(fs.createWriteStream(pathName));
-    return new Promise((resolve) => {
-      response.data.on("end", () => resolve(fs.createReadStream(pathName)));
-    });
-  } catch (error) {
-    console.error(error);
-    return null;
-  }
-}
