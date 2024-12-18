@@ -43,7 +43,7 @@ module.exports = {
       const prompt = args.join(' ');
       const world = `&ratio=${ratio}`;
       const team = `fluxpro?prompt=${encodeURIComponent(prompt)}${world}`;
-      const imageURL = `https://team-calyx.onrender.com/${team}`;
+      const imageURL = `https://smfahim.xyz/${team}`;
       const attachment = await global.utils.getStreamFromURL(imageURL);
 
       const endTime = new Date().getTime();
