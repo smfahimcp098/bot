@@ -6,7 +6,7 @@ module.exports = {
     countDown: 10,
     role: 0,
     longDescription: {
-      en: 'Generate up to 4 images from text using Flux Dev model.'
+      en: 'Generate an image from text using fluxpro.'
     },
     category: 'image',
     guide: {
@@ -18,9 +18,7 @@ module.exports = {
     const promptText = args.join(' ');
 
     if (!promptText) {
-      return message.reply(
-        `Please enter a text prompt\nExample: \n${global.GoatBot.config.prefix}fluxdev a cat or,\n${global.GoatBot.config.prefix}fluxdev a girl --ar 2:3`
-      );
+      return message.reply(`😖 Please enter a text prompt\nExample: \n${global.GoatBot.config.prefix}fluxdev a boy or,\n${global.GoatBot.config.prefix}fluxdev a girl --ar 2:3`);
     }
 
     let ratio = '1:1';
@@ -33,49 +31,34 @@ module.exports = {
       const ratioFlagIndex = args.findIndex(arg => arg === '--ar');
       if (ratioFlagIndex !== -1 && args[ratioFlagIndex + 1]) {
         ratio = args[ratioFlagIndex + 1];
-        args.splice(ratioFlagIndex, 2);
+        args.splice(ratioFlagIndex, 2); 
       }
     }
 
-    api.setMessageReaction('⏳', event.messageID, () => {}, true);
+    api.setMessageReaction("⏳", event.messageID, () => {}, true);
 
     const startTime = new Date().getTime();
 
     try {
       const prompt = args.join(' ');
-      const params = `flux?prompt=${encodeURIComponent(prompt)}&ratio=${ratio}`;
-					const x = "xyz";
-      const urls = Array(4).fill(`https://smfahim.${x}/${params}`);
+      const world = `&ratio=${ratio}`;
+      const team = `flux?prompt=${encodeURIComponent(prompt)}${world}`;
+      const imageURL = `https://smfahim.xyz/${team}`;
+      const attachment = await global.utils.getStreamFromURL(imageURL);
 
-      const results = await Promise.all(
-        urls.map(async (url) => {
-          try {
-            return await global.utils.getStreamFromURL(url);
-          } catch {
-            return null;
-          }
-        })
-      );
+      const endTime = new Date().getTime();
+      const timeTaken = (endTime - startTime) / 1000;
 
-      const attachments = results.filter(result => result !== null);
+      message.reply({
+        body: `Here is your FLUX Dev Model 🖼\nTime taken: ${timeTaken} seconds`,
+        attachment: attachment
+      });
 
-      if (attachments.length > 0) {
-        const endTime = new Date().getTime();
-        const timeTaken = (endTime - startTime) / 1000;
+      api.setMessageReaction("✅", event.messageID, () => {}, true);
 
-        message.reply({
-          body: `Here are your Flux Dev Model images 🖼\nTime taken: ${timeTaken} seconds\nImages received: ${attachments.length}`,
-          attachment: attachments
-        });
-
-        api.setMessageReaction('✅', event.messageID, () => {}, true);
-      } else {
-        message.reply('❌ No images could be generated.');
-        api.setMessageReaction('❌', event.messageID, () => {}, true);
-      }
     } catch (error) {
-      console.error('Error while generating images:', error);
-      api.setMessageReaction('❌', event.messageID, () => {}, true);
+      console.error(error);
+      api.setMessageReaction("❌", event.messageID, () => {}, true);
     }
   }
 };
