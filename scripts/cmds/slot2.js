@@ -191,7 +191,7 @@ module.exports = {
     author: "Vincenzo",
     version: "1.1",
     cooldowns: 5,
-    role: 1,
+    role: 0,
     shortDescription: "Generate and select images using Niji V5.",
     longDescription: "Generates four images based on a prompt and allows the user to select one.",
     category: "AI",
