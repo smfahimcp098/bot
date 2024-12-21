@@ -32,7 +32,7 @@ module.exports = {
         const reactions = ["🔴", "🔵", "🟢", "🟡"];
 
         for (let i = 0; i < 4; i++) {
-          const imageURL = `https://smfahim.${o}/gen2?prompt=${encodeURIComponent(promptText)}`;
+          const imageURL = `https://smfahim.${o}/creartai?prompt=${encodeURIComponent(promptText)}`;
           imageUrls.push(imageURL);
         }
 
