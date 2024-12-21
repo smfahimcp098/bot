@@ -203,20 +203,20 @@ module.exports = {
     api.setMessageReaction("⏳", event.messageID, () => {}, true);
 
     try {
+      // Parse prompt, ratio, and style
       let prompt = "";
-      let ratio = "1:1"; // Default ratio is 1:1
+      let ratio = "1:1";
       let style = "";
 
-      // Parse the arguments for prompt, ratio, and style
       for (let i = 0; i < args.length; i++) {
-        if (args[i].startsWith("--ar=") || args[i].startsWith("--ratio=")) {
+        if (args[i].startsWith("--ar=")) {
           ratio = args[i].split("=")[1];
-        } else if ((args[i] === "--ar" || args[i] === "--ratio") && args[i + 1]) {
+        } else if (args[i] === "--ar" && args[i + 1]) {
           ratio = args[i + 1];
           i++;
-        } else if (args[i].startsWith("--s=") || args[i].startsWith("--style=")) {
+        } else if (args[i].startsWith("--s=")) {
           style = args[i].split("=")[1];
-        } else if ((args[i] === "--s" || args[i] === "--style") && args[i + 1]) {
+        } else if (args[i] === "--s" && args[i + 1]) {
           style = args[i + 1];
           i++;
         } else {
@@ -225,126 +225,87 @@ module.exports = {
       }
 
       prompt = prompt.trim();
-
-      if (!prompt) {
-        return message.reply("❌ | Please provide a prompt.");
-      }
-
-      if (style && !styleMap[style]) {
-        return message.reply(`❌ | Invalid style: ${style}. Please provide a valid style number (1-9).`);
-      }
+      if (!prompt) return message.reply("❌ | Please provide a prompt.");
+      if (style && !styleMap[style]) return message.reply("❌ | Invalid style selection.");
 
       const styledPrompt = `${prompt}, ${styleMap[style] || ""}`.trim();
-      const params = { prompt: styledPrompt, ratio };
-      const ok = "xyz"; // Update with your domain or URL shortener if needed
-      const urls = [
-        `https://smfahim.${ok}/xl31/gen`,
-        `https://smfahim.${ok}/xl31/gen`,
-        `https://smfahim.${ok}/xl31/gen`,
-        `https://smfahim.${ok}/xl31/gen`
-      ];
-      const cacheFolderPath = path.join(__dirname, "/tmp");
+      const urls = Array(4).fill(`https://smfahim.xyz/xl31/gen`);
+      const cacheFolder = path.join(__dirname, "/tmp");
 
-      if (!fs.existsSync(cacheFolderPath)) {
-        fs.mkdirSync(cacheFolderPath);
-      }
+      if (!fs.existsSync(cacheFolder)) fs.mkdirSync(cacheFolder);
 
-      const imagePromises = urls.map((url) => axios.get(url, { params }));
-      const responses = await Promise.all(imagePromises);
+      // Fetch images
+      const responses = await Promise.all(urls.map((url) =>
+        axios.get(url, { params: { prompt: styledPrompt, ratio } })
+      ));
 
       const images = await Promise.all(
-        responses.map(async (response, index) => {
-          const imageURL = response.data.imageUrl;
-          const imagePath = path.join(cacheFolderPath, `image_${index + 1}_${Date.now()}.jpg`);
-          const writer = fs.createWriteStream(imagePath);
-
-          const imageResponse = await axios({
-            url: imageURL,
-            method: "GET",
-            responseType: "stream"
-          });
-
-          imageResponse.data.pipe(writer);
-          await new Promise((resolve, reject) => {
-            writer.on("finish", resolve);
-            writer.on("error", reject);
-          });
-          return imagePath;
+        responses.map(async (res, idx) => {
+          const imgURL = res.data.imageUrl;
+          const imgPath = path.join(cacheFolder, `img_${idx + 1}_${Date.now()}.jpg`);
+          const imgRes = await axios({ url: imgURL, responseType: "stream" });
+          imgRes.data.pipe(fs.createWriteStream(imgPath));
+          await new Promise((resolve) => imgRes.data.on("end", resolve));
+          return imgPath;
         })
       );
 
-      // Resize the images based on the ratio
-      const [width, height] = ratio.split(":").map(Number);
-      const resizeWidth = 512;
-      const resizeHeight = Math.floor((resizeWidth * height) / width);
+      // Resize images
+      const [w, h] = ratio.split(":").map(Number);
+      const [resizeW, resizeH] = [512, (512 * h) / w];
+      const buffers = await Promise.all(images.map((img) => sharp(img).resize(resizeW, resizeH).toBuffer()));
 
-      const loadedImages = await Promise.all(
-        images.map((img) => sharp(img).resize(resizeWidth, resizeHeight).toBuffer())
-      );
-
-      const compositeImages = [
-        { input: loadedImages[0], left: 0, top: 0 },
-        { input: loadedImages[1], left: resizeWidth, top: 0 },
-        { input: loadedImages[2], left: 0, top: resizeHeight },
-        { input: loadedImages[3], left: resizeWidth, top: resizeHeight }
-      ];
-
-      const combinedImagePath = path.join(cacheFolderPath, `image_combined_${Date.now()}.jpg`);
-      await sharp({
-        create: {
-          width: resizeWidth * 2,
-          height: resizeHeight * 2,
-          channels: 3,
-          background: { r: 255, g: 255, b: 255 }
-        }
-      })
-        .composite(compositeImages)
-        .toFile(combinedImagePath);
+      // Combine images into grid
+      const combinedPath = path.join(cacheFolder, `combined_${Date.now()}.jpg`);
+      await sharp({ create: { width: resizeW * 2, height: resizeH * 2, channels: 3, background: { r: 255, g: 255, b: 255 } } })
+        .composite([
+          { input: buffers[0], left: 0, top: 0 },
+          { input: buffers[1], left: resizeW, top: 0 },
+          { input: buffers[2], left: 0, top: resizeH },
+          { input: buffers[3], left: resizeW, top: resizeH }
+        ])
+        .toFile(combinedPath);
 
       const timeTaken = ((Date.now() - startTime) / 1000).toFixed(2);
       api.setMessageReaction("✅", event.messageID, () => {}, true);
 
       const reply = await message.reply({
-        body: `Select an image by responding with 1, 2, 3, or 4.\n\nTime taken: ${timeTaken} seconds`,
-        attachment: fs.createReadStream(combinedImagePath)
+        body: `Select an image by replying with 1, 2, 3, or 4.\nTime: ${timeTaken} seconds.`,
+        attachment: fs.createReadStream(combinedPath)
       });
 
-      const data = {
+      global.GoatBot.onReply.set(reply.messageID, {
         commandName: this.config.name,
         messageID: reply.messageID,
-        images: images,
-        combinedImage: combinedImagePath,
+        images,
+        combinedImage: combinedPath,
         author: event.senderID
-      };
-
-      global.GoatBot.onReply.set(reply.messageID, data);
+      });
 
       setTimeout(() => {
         global.GoatBot.onReply.delete(reply.messageID);
-        images.forEach((image) => fs.unlinkSync(image));
-        fs.unlinkSync(combinedImagePath);
+        images.forEach((img) => fs.unlinkSync(img));
+        fs.unlinkSync(combinedPath);
       }, 300000);
-
     } catch (error) {
       api.setMessageReaction("❌", event.messageID, () => {}, true);
-      console.error("Error:", error.response ? error.response.data : error.message);
+      console.error(error.message);
+      message.reply("❌ | An error occurred. Please try again.");
     }
   },
 
-  onReply: async function ({ api, event, Reply, args, message }) {
+  onReply: async function ({ api, event, Reply }) {
     try {
       const index = parseInt(event.body.trim());
       if (isNaN(index) || index < 1 || index > 4) {
-        return message.reply("❌ | Invalid selection. Please reply with a number between 1 and 4.");
+        return message.reply("❌ | Invalid selection. Choose 1-4.");
       }
 
-      const selectedImagePath = Reply.images[index - 1];
-      await message.reply({
-        attachment: fs.createReadStream(selectedImagePath)
-      });
+      const selectedImage = Reply.images[index - 1];
+      await message.reply({ attachment: fs.createReadStream(selectedImage) });
     } catch (error) {
-      console.error("Error:", error.message);
-      message.reply("❌ | Failed to send selected image.");
+      console.error(error.message);
+      message.reply("❌ | Unable to send selected image.");
     }
   }
 };
