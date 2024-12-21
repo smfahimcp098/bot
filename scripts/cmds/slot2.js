@@ -200,7 +200,6 @@ module.exports = {
 
   onStart: async function ({ message, args, api, event }) {
     const startTime = Date.now();
-    api.setMessageReaction("⏳", event.messageID, () => {}, true);
 
     try {
       // Parse prompt, ratio, and style
@@ -226,7 +225,10 @@ module.exports = {
 
       prompt = prompt.trim();
       if (!prompt) return message.reply("❌ | Please provide a prompt.");
-      if (style && !styleMap[style]) return message.reply("❌ | Invalid style selection.");
+      if (style && !styleMap[style]) return message.reply("❌ | Invalid style: ${style}. Please provide a valid style number (1-9).");
+      
+      api.setMessageReaction("⏳", event.messageID, () => {}, true);
+
 
       const styledPrompt = `${prompt}, ${styleMap[style] || ""}`.trim();
       const urls = Array(4).fill(`https://smfahim.xyz/xl31/gen`);
