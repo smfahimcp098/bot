@@ -225,13 +225,12 @@ module.exports = {
       }
 
       prompt = prompt.trim();
-      
+
       if (!prompt) {
         return message.reply("❌ | Please provide a prompt.");
-        }
+      }
 
       if (style && !styleMap[style]) {
-        api.setMessageReaction("❌", event.messageID, () => {}, true);
         return message.reply(`❌ | Invalid style: ${style}. Please provide a valid style number (1-9).`);
       }
 
@@ -274,8 +273,58 @@ module.exports = {
         })
       );
 
-      // Rest of the logic remains unchanged for compositing and handling reply events
-      // ...
+      // Resize the images based on the ratio
+      const [width, height] = ratio.split(":").map(Number);
+      const resizeWidth = 512;
+      const resizeHeight = Math.floor((resizeWidth * height) / width);
+
+      const loadedImages = await Promise.all(
+        images.map((img) => sharp(img).resize(resizeWidth, resizeHeight).toBuffer())
+      );
+
+      const compositeImages = [
+        { input: loadedImages[0], left: 0, top: 0 },
+        { input: loadedImages[1], left: resizeWidth, top: 0 },
+        { input: loadedImages[2], left: 0, top: resizeHeight },
+        { input: loadedImages[3], left: resizeWidth, top: resizeHeight }
+      ];
+
+      const combinedImagePath = path.join(cacheFolderPath, `image_combined_${Date.now()}.jpg`);
+      await sharp({
+        create: {
+          width: resizeWidth * 2,
+          height: resizeHeight * 2,
+          channels: 3,
+          background: { r: 255, g: 255, b: 255 }
+        }
+      })
+        .composite(compositeImages)
+        .toFile(combinedImagePath);
+
+      const timeTaken = ((Date.now() - startTime) / 1000).toFixed(2);
+      api.setMessageReaction("✅", event.messageID, () => {}, true);
+
+      const reply = await message.reply({
+        body: `Select an image by responding with 1, 2, 3, or 4.\n\nTime taken: ${timeTaken} seconds`,
+        attachment: fs.createReadStream(combinedImagePath)
+      });
+
+      const data = {
+        commandName: this.config.name,
+        messageID: reply.messageID,
+        images: images,
+        combinedImage: combinedImagePath,
+        author: event.senderID
+      };
+
+      global.GoatBot.onReply.set(reply.messageID, data);
+
+      setTimeout(() => {
+        global.GoatBot.onReply.delete(reply.messageID);
+        images.forEach((image) => fs.unlinkSync(image));
+        fs.unlinkSync(combinedImagePath);
+      }, 300000);
+
     } catch (error) {
       api.setMessageReaction("❌", event.messageID, () => {}, true);
       console.error("Error:", error.response ? error.response.data : error.message);
