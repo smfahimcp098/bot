@@ -17,7 +17,7 @@ module.exports = {
   config: {
     name: "fluxjourney",
     aliases: ['fluxj'],
-    aliases: [],
+    // aliases: [],
     author: "Vincenzo",
     version: "1.1",
     cooldowns: 5,
