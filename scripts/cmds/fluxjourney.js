@@ -52,7 +52,7 @@ module.exports = {
       const timeTaken = (endTime - startTime) / 1000;
 
       message.reply({
-        body: `Here is your XL Model 🖼\nTime taken: ${timeTaken} seconds`,
+        body: `Here is your flux journey Model 🖼\nTime taken: ${timeTaken} seconds`,
         attachment: attachment
       });
 
