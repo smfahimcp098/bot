@@ -60,10 +60,10 @@ module.exports = {
       const params = { prompt: styledPrompt, ratio };
       const ok = "xyz";
       const urls = [
-        `https://smfahim.${ok}/fluxanime/gen`,
-        `https://smfahim.${ok}/fluxanime/gen`,
-        `https://smfahim.${ok}/fluxanime/gen`,
-        `https://smfahim.${ok}/fluxanime/gen`
+        `http://smfahim.${ok}/fluxanime/gen`,
+        `http://smfahim.${ok}/fluxanime/gen`,
+        `http://smfahim.${ok}/fluxanime/gen`,
+        `http://smfahim.${ok}/fluxanime/gen`
       ];
       const cacheFolderPath = path.join(__dirname, "/tmp");
       if (!fs.existsSync(cacheFolderPath)) {
