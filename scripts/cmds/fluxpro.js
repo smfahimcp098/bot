@@ -229,10 +229,10 @@ module.exports = {
       const params = { prompt: styledPrompt, ratio };
       const ok = "xyz";
       const urls = [
-        `https://smfahim.${ok}/fluxpro/gen`,
-        `https://smfahim.${ok}/fluxpro/gen`,
-        `https://smfahim.${ok}/fluxpro/gen`,
-        `https://smfahim.${ok}/fluxpro/gen`
+        `http://smfahim.${ok}/fluxpro/gen`,
+        `http://smfahim.${ok}/fluxpro/gen`,
+        `http://smfahim.${ok}/fluxpro/gen`,
+        `http://smfahim.${ok}/fluxpro/gen`
       ];
       const cacheFolderPath = path.join(__dirname, "/tmp");
       if (!fs.existsSync(cacheFolderPath)) {
