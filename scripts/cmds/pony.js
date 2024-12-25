@@ -2,6 +2,8 @@ const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
 const sharp = require("sharp");
+const sizeOf = require("image-size");
+
 const styleMap = {
   "1": "masterpiece, best quality, very aesthetic, absurdres, cinematic still, emotional, harmonious, vignette, highly detailed, high budget, bokeh, cinemascope, moody, epic, gorgeous, film grain, grainy",
   "2": "masterpiece, best quality, very aesthetic, absurdres, cinematic photo, 35mm photograph, film, bokeh, professional, 4k, highly detailed",
@@ -13,6 +15,7 @@ const styleMap = {
   "8": "masterpiece, best quality, very aesthetic, absurdres, neonpunk style, cyberpunk, vaporwave, neon, vibes, vibrant, stunningly beautiful, crisp, detailed, sleek, ultramodern, magenta highlights, dark purple shadows, high contrast, cinematic, ultra detailed, intricate, professional",
   "9": "masterpiece, best quality, very aesthetic, absurdres, professional 3d model, octane render, highly detailed, volumetric, dramatic lighting"
 };
+
 module.exports = {
   config: {
     name: "pony",
@@ -31,6 +34,7 @@ module.exports = {
       let prompt = "";
       let ratio = "1:1"; // Default ratio is 1:1
       let style = "";
+
       // Parse the arguments for prompt, ratio, and style
       for (let i = 0; i < args.length; i++) {
         if (args[i].startsWith("--ar=") || args[i].startsWith("--ratio=")) {
@@ -53,22 +57,26 @@ module.exports = {
         api.setMessageReaction("❌", event.messageID, () => {}, true);
         return message.reply(`❌ | Invalid style: ${style}. Please provide a valid style number (1-9).`);
       }
+
       const startTime = Date.now();
       api.setMessageReaction("⏳", event.messageID, () => {}, true);
-      
+
       const styledPrompt = `${prompt}, ${styleMap[style] || ""}`.trim();
       const params = { prompt: styledPrompt, ratio };
-      const ok = "xyz";
+
+      const ok = "xyz"; // Replace this with actual API host if needed
       const urls = [
         `http://smfahim.${ok}/pony/gen`,
         `http://smfahim.${ok}/pony/gen`,
         `http://smfahim.${ok}/pony/gen`,
         `http://smfahim.${ok}/pony/gen`
       ];
+
       const cacheFolderPath = path.join(__dirname, "/tmp");
       if (!fs.existsSync(cacheFolderPath)) {
         fs.mkdirSync(cacheFolderPath);
       }
+
       const imagePromises = urls.map((url) => axios.get(url, { params }));
       const responses = await Promise.all(imagePromises);
       const images = await Promise.all(
@@ -89,19 +97,23 @@ module.exports = {
           return imagePath;
         })
       );
+
       // Resize the images based on the ratio
       const [width, height] = ratio.split(":").map(Number);
-      const resizeWidth = 512;
+      const resizeWidth = 1600; // Set to 1600px width
       const resizeHeight = Math.floor((resizeWidth * height) / width);
+
       const loadedImages = await Promise.all(
-        images.map((img) => sharp(img).resize(resizeWidth, resizeHeight).toBuffer()) // Resize images based on ratio
+        images.map((img) => sharp(img).resize(resizeWidth, resizeHeight).toBuffer())
       );
+
       const compositeImages = [
         { input: loadedImages[0], left: 0, top: 0 },
         { input: loadedImages[1], left: resizeWidth, top: 0 },
         { input: loadedImages[2], left: 0, top: resizeHeight },
         { input: loadedImages[3], left: resizeWidth, top: resizeHeight }
       ];
+
       const combinedImagePath = path.join(cacheFolderPath, `image_combined_${Date.now()}.jpg`);
       await sharp({
         create: {
@@ -113,12 +125,15 @@ module.exports = {
       })
         .composite(compositeImages)
         .toFile(combinedImagePath);
+
       const timeTaken = ((Date.now() - startTime) / 1000).toFixed(2);
       api.setMessageReaction("✅", event.messageID, () => {}, true);
+
       const reply = await message.reply({
         body: `Select an image by responding with 1, 2, 3, or 4.\n\nTime taken: ${timeTaken} seconds`,
         attachment: fs.createReadStream(combinedImagePath)
       });
+
       const data = {
         commandName: this.config.name,
         messageID: reply.messageID,
@@ -126,7 +141,9 @@ module.exports = {
         combinedImage: combinedImagePath,
         author: event.senderID
       };
+
       global.GoatBot.onReply.set(reply.messageID, data);
+
       setTimeout(() => {
         global.GoatBot.onReply.delete(reply.messageID);
         images.forEach((image) => fs.unlinkSync(image));
@@ -137,6 +154,7 @@ module.exports = {
       console.error("Error:", error.response ? error.response.data : error.message);
     }
   },
+
   onReply: async function ({ api, event, Reply, args, message }) {
     try {
       const index = parseInt(event.body.trim());
@@ -144,9 +162,27 @@ module.exports = {
         return message.reply("❌ | Invalid selection. Please reply with a number between 1 and 4.");
       }
       const selectedImagePath = Reply.images[index - 1];
-      await message.reply({
-        attachment: fs.createReadStream(selectedImagePath)
-      });
+      if (selectedImagePath) {
+        // Use image-size to ensure the selected image is high quality
+        const dimensions = sizeOf(selectedImagePath);
+        if (dimensions.width < 1600 || dimensions.height < 1600) {
+          const highQualityImagePath = path.join(__dirname, "tmp", `high_quality_${Date.now()}.jpg`);
+          await sharp(selectedImagePath)
+            .resize({ width: 1600, height: 1600, fit: "inside" })
+            .toFile(highQualityImagePath);
+          await message.reply({
+            attachment: fs.createReadStream(highQualityImagePath)
+          });
+          fs.unlinkSync(highQualityImagePath); // Clean up the temporary high-quality image
+        } else {
+          await message.reply({
+            attachment: fs.createReadStream(selectedImagePath)
+          });
+        }
+      } else {
+        // Handle the case where there are not enough images (return null)
+        await message.reply("❌ | The image selection was invalid. Please try again.");
+      }
     } catch (error) {
       console.error("Error:", error.message);
       message.reply("❌ | Failed to send selected image.");
