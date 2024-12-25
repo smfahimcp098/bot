@@ -32,10 +32,9 @@ module.exports = {
   onStart: async function ({ message, args, api, event }) {
     try {
       let prompt = "";
-      let ratio = "1:1"; // Default ratio is 1:1
+      let ratio = "1:1"; 
       let style = "";
 
-      // Parse the arguments for prompt, ratio, and style
       for (let i = 0; i < args.length; i++) {
         if (args[i].startsWith("--ar=") || args[i].startsWith("--ratio=")) {
           ratio = args[i].split("=")[1];
@@ -64,7 +63,7 @@ module.exports = {
       const styledPrompt = `${prompt}, ${styleMap[style] || ""}`.trim();
       const params = { prompt: styledPrompt, ratio };
 
-      const ok = "xyz"; // Replace this with actual API host if needed
+      const ok = "xyz";
       const urls = [
         `http://smfahim.${ok}/pony/gen`,
         `http://smfahim.${ok}/pony/gen`,
@@ -98,9 +97,8 @@ module.exports = {
         })
       );
 
-      // Resize the images based on the ratio
       const [width, height] = ratio.split(":").map(Number);
-      const resizeWidth = 1600; // Set to 1600px width
+      const resizeWidth = 1600;
       const resizeHeight = Math.floor((resizeWidth * height) / width);
 
       const loadedImages = await Promise.all(
@@ -163,7 +161,6 @@ module.exports = {
       }
       const selectedImagePath = Reply.images[index - 1];
       if (selectedImagePath) {
-        // Use image-size to ensure the selected image is high quality
         const dimensions = sizeOf(selectedImagePath);
         if (dimensions.width < 1600 || dimensions.height < 1600) {
           const highQualityImagePath = path.join(__dirname, "tmp", `high_quality_${Date.now()}.jpg`);
@@ -173,14 +170,13 @@ module.exports = {
           await message.reply({
             attachment: fs.createReadStream(highQualityImagePath)
           });
-          fs.unlinkSync(highQualityImagePath); // Clean up the temporary high-quality image
+          fs.unlinkSync(highQualityImagePath);
         } else {
           await message.reply({
             attachment: fs.createReadStream(selectedImagePath)
           });
         }
       } else {
-        // Handle the case where there are not enough images (return null)
         await message.reply("❌ | The image selection was invalid. Please try again.");
       }
     } catch (error) {
