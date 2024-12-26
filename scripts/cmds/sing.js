@@ -95,7 +95,7 @@ module.exports = {
     role: 0,
     shortDescription: "Play a song from YouTube",
     longDescription: "Search for a song on YouTube and play the audio",
-    category: "𝗠𝗘𝗗𝗜𝗔",
+    category: "media",
     guide: "{pn} <song name or youtube link>"
   },
 
