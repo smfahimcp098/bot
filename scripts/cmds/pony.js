@@ -2,7 +2,6 @@ const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
 const sharp = require("sharp");
-const sizeOf = require("image-size");
 
 const styleMap = {
   "1": "masterpiece, best quality, very aesthetic, absurdres, cinematic still, emotional, harmonious, vignette, highly detailed, high budget, bokeh, cinemascope, moody, epic, gorgeous, film grain, grainy",
@@ -32,9 +31,10 @@ module.exports = {
   onStart: async function ({ message, args, api, event }) {
     try {
       let prompt = "";
-      let ratio = "1:1"; 
+      let ratio = "1:1"; // Default ratio is 1:1
       let style = "";
 
+      // Parse the arguments for prompt, ratio, and style
       for (let i = 0; i < args.length; i++) {
         if (args[i].startsWith("--ar=") || args[i].startsWith("--ratio=")) {
           ratio = args[i].split("=")[1];
@@ -63,7 +63,7 @@ module.exports = {
       const styledPrompt = `${prompt}, ${styleMap[style] || ""}`.trim();
       const params = { prompt: styledPrompt, ratio };
 
-      const ok = "xyz";
+      const ok = "xyz"; // Replace this with actual API host if needed
       const urls = [
         `http://smfahim.${ok}/pony/gen`,
         `http://smfahim.${ok}/pony/gen`,
@@ -76,7 +76,20 @@ module.exports = {
         fs.mkdirSync(cacheFolderPath);
       }
 
-      const imagePromises = urls.map((url) => axios.get(url, { params }));
+      // Send requests for the first two URLs immediately
+      const imagePromises = [
+        axios.get(urls[0], { params }),
+        axios.get(urls[1], { params })
+      ];
+
+      // Wait for 3 seconds before sending requests for the last two URLs
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      imagePromises.push(
+        axios.get(urls[2], { params }),
+        axios.get(urls[3], { params })
+      );
+
       const responses = await Promise.all(imagePromises);
       const images = await Promise.all(
         responses.map(async (response, index) => {
@@ -97,8 +110,9 @@ module.exports = {
         })
       );
 
+      // Resize the images based on the ratio
       const [width, height] = ratio.split(":").map(Number);
-      const resizeWidth = 1600;
+      const resizeWidth = 1600; // Set to 1600px width
       const resizeHeight = Math.floor((resizeWidth * height) / width);
 
       const loadedImages = await Promise.all(
@@ -161,23 +175,11 @@ module.exports = {
       }
       const selectedImagePath = Reply.images[index - 1];
       if (selectedImagePath) {
-        const dimensions = sizeOf(selectedImagePath);
-        if (dimensions.width < 1600 || dimensions.height < 1600) {
-          const highQualityImagePath = path.join(__dirname, "tmp", `high_quality_${Date.now()}.jpg`);
-          await sharp(selectedImagePath)
-            .resize({ width: 1600, height: 1600, fit: "inside" })
-            .toFile(highQualityImagePath);
-          await message.reply({
-            attachment: fs.createReadStream(highQualityImagePath)
-          });
-          fs.unlinkSync(highQualityImagePath);
-        } else {
-          await message.reply({
-            attachment: fs.createReadStream(selectedImagePath)
-          });
-        }
+        await message.reply({
+          attachment: fs.createReadStream(selectedImagePath)
+        });
       } else {
-        await message.reply("❌ | The image selection was invalid. Please try again.");
+        await message.reply("❌ | The image selection was invalid. Please try again .");
       }
     } catch (error) {
       console.error("Error:", error.message);
