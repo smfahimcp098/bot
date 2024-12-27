@@ -18,7 +18,7 @@ module.exports = {
     const promptText = args.join(' ');
 
     if (!promptText) {
-      return message.reply(`😒 Please enter a text prompt\nExample: \n${global.GoatBot.config.prefix}flux a cat or,\n${global.GoatBot.config.prefix}flux a girl --ar 2:3`);
+      return message.reply(`Please enter a text prompt\nExample: \n${global.GoatBot.config.prefix}flux a cat or,\n${global.GoatBot.config.prefix}flux a girl --ar 2:3`);
     }
 
     let ratio = '1:1';
@@ -43,14 +43,14 @@ module.exports = {
       const prompt = args.join(' ');
       const world = `&ratio=${ratio}`;
       const team = `flux?prompt=${encodeURIComponent(prompt)}${world}`;
-      const imageURL = `https://team-calyx.onrender.com/${team}`;
+      const imageURL = `https://smfahim.xyz/${team}`;
       const attachment = await global.utils.getStreamFromURL(imageURL);
 
       const endTime = new Date().getTime();
       const timeTaken = (endTime - startTime) / 1000;
 
       message.reply({
-        body: `Here is your Flux Schnell Model 🖼\nTime taken: ${timeTaken} seconds`,
+        body: `Here is your Flux Dev Model 🖼\nTime taken: ${timeTaken} seconds`,
         attachment: attachment
       });
 
