@@ -578,10 +578,10 @@ module.exports = {
 
       const ok = "xyz"; // Replace this with actual API host if needed
       const urls = [
-        `http://smfahim.${ok}/fluxpro/gen`,
-        `http://smfahim.${ok}/fluxpro/gen`,
-        `http://smfahim.${ok}/fluxpro/gen`,
-        `http://smfahim.${ok}/fluxpro/gen`
+        `https://smfahim.${ok}/fluxpro/gen`,
+        `https://smfahim.${ok}/fluxpro/gen`,
+        `https://smfahim.${ok}/fluxpro/gen`,
+        `https://smfahim.${ok}/fluxpro/gen`
       ];
 
       const cacheFolderPath = path.join(__dirname, "/tmp");
