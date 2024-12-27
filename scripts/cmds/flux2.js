@@ -4,7 +4,7 @@ module.exports = {
   config: {
     name: 'flux2',
     version: '1.0',
-    author: 'Team Calyx | Fahim_Noob',
+    author: 'Team Calyx',
     countDown: 0,
     role: 0,
     longDescription: {
