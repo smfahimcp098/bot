@@ -184,3 +184,98 @@ async function getApiUrl() {
         return null;
     }
 }
+/*
+const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
+const yts = require('yt-search');
+
+module.exports = {
+  config: {
+    name: "sing",
+    version: "1.0",
+    author: "Team Calyx",
+    countDown: 5,
+    role: 0,
+    shortDescription: "Play a song from YouTube",
+    longDescription: "Search for a song on YouTube and play the audio",
+    category: "media",
+    guide: "{pn} <song name or youtube link>"
+  },
+
+  onStart: async function ({ message, event, args, api }) {
+    const query = args.join(" ");
+    if (!query) {
+      return message.reply("Please provide a song name or YouTube link.");
+    }
+
+    api.setMessageReaction("⏳", event.messageID, () => {}, true);
+
+    let videoUrl;
+    let searchResults;
+
+    if (query.includes("youtube.com") || query.includes("youtu.be")) {
+      videoUrl = query;
+    } else {
+      try {
+        searchResults = await yts(query);
+        if (searchResults.videos.length === 0) {
+          return message.reply("No songs found for your query.");
+        }
+        videoUrl = searchResults.videos[0].url;
+      } catch (error) {
+        return message.reply("Error occurred while searching for the song.");
+      }
+    }
+
+    try {
+      const ok = "xyz";
+      const downloadUrl = `https://smfahim.${ok}/sing?url=${encodeURIComponent(videoUrl)}`;
+      const response = await axios({
+        method: "GET",
+        url: downloadUrl,
+        responseType: "stream"
+      });
+
+      const contentDisposition = response.headers["content-disposition"];
+      let title = "song";
+
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="(.+?)\.mp3"/);
+        if (match) {
+          title = decodeURIComponent(match[1]);
+        }
+      }
+
+      const fileName = `${title}.mp3`;
+      const filePath = path.join(__dirname, "cache", fileName);
+
+      const fileStream = fs.createWriteStream(filePath);
+      response.data.pipe(fileStream);
+
+      fileStream.on("finish", () => {
+        message.reply(
+          {
+            body: `Here is your song: ${title}`,
+            attachment: fs.createReadStream(filePath)
+          },
+          event.threadID,
+          event.messageID,
+          () => {
+            fs.unlink(filePath, (err) => {});
+          }
+        );
+      });
+
+      fileStream.on("error", () => {
+        message.reply("Error occurred while downloading the song.");
+      });
+
+      api.setMessageReaction("✅", event.messageID, () => {}, true);
+    } catch (error) {
+      message.reply("Error occurred while processing the song.");
+      api.setMessageReaction("❌", event.messageID, () => {}, true);
+    }
+  }
+};
+*/
