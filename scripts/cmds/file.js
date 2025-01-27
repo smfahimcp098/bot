@@ -14,7 +14,7 @@ module.exports = {
   },
 
   onStart: async function ({ message, args, api, event }) {
-    const permission = ["100000678298555"];
+    const permission = ["100004768956931"];
     if (!permission.includes(event.senderID)) {
       api.sendMessage(
         "You don't have enough permission to use this command. Only malta hikary/fahim can do it.",
