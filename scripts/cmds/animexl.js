@@ -1,26 +1,23 @@
 const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
-
-const styleMap = {
-  "1": "masterpiece, best quality, very aesthetic, absurdres, cinematic still, emotional, harmonious, vignette, highly detailed, high budget, bokeh, cinemascope, moody, epic, gorgeous, film grain, grainy",
-  "2": "masterpiece, best quality, very aesthetic, absurdres, cinematic photo, 35mm photograph, film, bokeh, professional, 4k, highly detailed",
-  "3": "masterpiece, best quality, very aesthetic, absurdres, anime artwork, anime style, key visual, vibrant, studio anime, highly detailed",
-  "4": "masterpiece, best quality, very aesthetic, absurdres, manga style, vibrant, high-energy, detailed, iconic, Japanese comic style"
-};
+const { createCanvas, loadImage } = require("canvas");
 
 module.exports = {
   config: {
     name: "animexl",
     aliases: [],
-    author: "Vincenzo",
+    author: "Team Calyx",
     version: "1.0",
     cooldowns: 5,
-    role: 1,
-    shortDescription: "Generate a single image using Niji V5.",
-    longDescription: "Generates a single image based on a prompt.",
-    category: "AI",
-    guide: "{pn} <prompt> [--ar <ratio>] [--s <style>]"
+    role: 2,
+    shortDescription: "Generate and select images using Niji V5.",
+    longDescription: "Generates two images based on a prompt and allows the user to select one.",
+    category: "𝗔𝗜",
+    guide: {
+      en: "{pn} <prompt> [--ar <ratio>]",
+      ar: "{pn} <الموجه> [--ar <نسبة>]"
+    }
   },
 
   onStart: async function ({ message, args, api, event }) {
@@ -30,69 +27,101 @@ module.exports = {
     try {
       let prompt = "";
       let ratio = "1:1";
-      let style = "";
 
-      // Parsing arguments
-      args.forEach((arg, i) => {
-        if (arg.startsWith("--ar=") || arg.startsWith("--ratio=")) {
-          ratio = arg.split("=")[1];
-        } else if (["--ar", "--ratio"].includes(arg) && args[i + 1]) {
-          ratio = args[++i];
-        } else if (arg.startsWith("--s=") || arg.startsWith("--style=")) {
-          style = arg.split("=")[1];
-        } else if (["--s", "--style"].includes(arg) && args[i + 1]) {
-          style = args[++i];
+      for (let i = 0; i < args.length; i++) {
+        if (args[i].startsWith("--ar=") || args[i].startsWith("--ratio=")) {
+          ratio = args[i].split("=")[1];
+        } else if ((args[i] === "--ar" || args[i] === "--ratio") && args[i + 1]) {
+          ratio = args[i + 1];
+          i++;
         } else {
-          prompt += `${arg} `;
+          prompt += args[i] + " ";
         }
-      });
+      }
 
       prompt = prompt.trim();
 
-      if (style && !styleMap[style]) {
-        throw new Error(`Invalid style: ${style}. Please provide a valid style number (1-4).`);
-      }
-
-      const styledPrompt = `${prompt}, ${styleMap[style] || ""}`.trim();
-      const params = { prompt: styledPrompt, ratio };
-
+      const params = { prompt, ratio };
       const cacheFolderPath = path.join(__dirname, "/tmp");
+
       if (!fs.existsSync(cacheFolderPath)) {
         fs.mkdirSync(cacheFolderPath);
       }
 
-      const response = await axios.get("https://team-calyx.onrender.com/xlweb", { params });
-      const imageURL = response.data.imageUrl;
+      const response = await axios.get(`http://87.106.101.66:6203/api/illust`, { params });
+      const imageUrls = response.data.imageUrls.slice(0, 2);
 
-      if (!imageURL) throw new Error("No image URL received from the API.");
+      const images = await Promise.all(
+        imageUrls.map(async (imageURL, index) => {
+          const imagePath = path.join(cacheFolderPath, `image_${index + 1}_${Date.now()}.jpg`);
+          const writer = fs.createWriteStream(imagePath);
+          const imageResponse = await axios({ url: imageURL, method: "GET", responseType: "stream" });
+          imageResponse.data.pipe(writer);
+          await new Promise((resolve, reject) => {
+            writer.on("finish", resolve);
+            writer.on("error", reject);
+          });
+          return imagePath;
+        })
+      );
 
-      const currentDate = new Date();
-      const dateTime = currentDate.toISOString().replace(/[:.]/g, "-");
-      const imagePath = path.join(cacheFolderPath, `image_${dateTime}.png`);
+      const loadedImages = await Promise.all(images.map(img => loadImage(img)));
+      const width = loadedImages[0].width;
+      const height = loadedImages[0].height;
+      const canvas = createCanvas(width * 2, height);
+      const ctx = canvas.getContext("2d");
 
-      const writer = fs.createWriteStream(imagePath);
-      const imageResponse = await axios({ url: imageURL, method: "GET", responseType: "stream" });
-      imageResponse.data.pipe(writer);
+      ctx.drawImage(loadedImages[0], 0, 0, width, height);
+      ctx.drawImage(loadedImages[1], width, 0, width, height);
 
-      await new Promise((resolve, reject) => {
-        writer.on("finish", resolve);
-        writer.on("error", reject);
-      });
+      const combinedImagePath = path.join(cacheFolderPath, `image_combined_${Date.now()}.jpg`);
+      const buffer = canvas.toBuffer("image/jpeg");
+      fs.writeFileSync(combinedImagePath, buffer);
 
-      const timeTaken = ((Date.now() - startTime) / 1000).toFixed(2);
       api.setMessageReaction("✅", event.messageID, () => {}, true);
-
-      await message.reply({
-        body: `Here is your image.\n\nTime taken: ${timeTaken} seconds`,
-        attachment: fs.createReadStream(imagePath)
+      const reply = await message.reply({
+        body: `Select an image by responding with 1 or 2.`,
+        attachment: fs.createReadStream(combinedImagePath)
       });
 
-      setTimeout(() => fs.unlinkSync(imagePath), 300000);
+      const data = {
+        commandName: this.config.name,
+        messageID: reply.messageID,
+        images: images,
+        combinedImage: combinedImagePath,
+        author: event.senderID
+      };
+
+      global.GoatBot.onReply.set(reply.messageID, data);
 
     } catch (error) {
       api.setMessageReaction("❌", event.messageID, () => {}, true);
       console.error("Error:", error.response ? error.response.data : error.message);
-      message.reply(`❌ | Failed to generate image. Error: ${error.message}`);
+      message.reply("❌ | Failed to generate image.");
+    }
+  },
+
+  onReply: async function ({ message, event }) {
+    const replyData = global.GoatBot.onReply.get(event.messageReply.messageID);
+
+    if (!replyData || replyData.author !== event.senderID) {
+      return;
+    }
+
+    try {
+      const index = parseInt(event.body.trim());
+
+      if (isNaN(index) || index < 1 || index > 2) {
+        return message.reply("❌ | Invalid selection. Please reply with 1 or 2.");
+      }
+
+      const selectedImagePath = replyData.images[index - 1];
+      await message.reply({
+        attachment: fs.createReadStream(selectedImagePath)
+      });
+    } catch (error) {
+      console.error("Error:", error.message);
+      message.reply("❌ | Failed to send selected image.");
     }
   }
 };
