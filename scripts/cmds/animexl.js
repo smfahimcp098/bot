@@ -13,7 +13,7 @@ module.exports = {
     role: 2,
     shortDescription: "Generate and select images using Niji V5.",
     longDescription: "Generates two images based on a prompt and allows the user to select one.",
-    category: "𝗔𝗜",
+    category: "ai",
     guide: {
       en: "{pn} <prompt> [--ar <ratio>]",
       ar: "{pn} <الموجه> [--ar <نسبة>]"
