@@ -99,5 +99,9 @@ module.exports = {
 			return () => {
 				return message.reply(getLang("myPrefix", global.GoatBot.config.prefix, utils.getPrefix(event.threadID)));
 			};
+		if (event.body && event.body.toLowerCase() === "bot")
+			return () => {
+				return message.reply(getLang("myPrefix", global.GoatBot.config.prefix, utils.getPrefix(event.threadID)));
+			};
 	}
 };
