@@ -48,7 +48,7 @@ module.exports = {
         fs.mkdirSync(cacheFolderPath);
       }
 
-      const response = await axios.get(`http://87.106.101.66:6203/api/illust`, { params });
+      const response = await axios.get(`https://smfahim.xyz/tensorweb/xl`, { params });
       const imageUrls = response.data.imageUrls.slice(0, 2);
 
       const images = await Promise.all(
