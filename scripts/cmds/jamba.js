@@ -67,7 +67,7 @@ const clearUserHistory = (userId) => {
 const sendMessage = async (message, question, event, config) => {
   try {
     const userId = event.senderID;
-    const TOKEN = 'Bearer 8JKx9pycpNtmj2aVOGtE2FDBqJnsBHI8';
+    const TOKEN = 'Bearer bpEElglvEWoWbK0OvqyCC2VEZB3EJ4iv';
 
     const userHistory = getUserHistory(userId);
     userHistory.push({ role: "user", content: question });
