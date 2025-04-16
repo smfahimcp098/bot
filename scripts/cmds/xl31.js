@@ -5,7 +5,7 @@ const { createCanvas, loadImage } = require("canvas");
 
 module.exports = {
   config: {
-    name: "animexl",
+    name: "xl31",
     aliases: [],
     author: "Team Calyx",
     version: "1.0",
