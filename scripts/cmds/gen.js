@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
-const sharp = require("sharp");
+const { createCanvas, loadImage } = require("canvas");
 
 const styleMap = {
   "1": "masterpiece, best quality, very aesthetic, absurdres, cinematic still, emotional, harmonious, vignette, highly detailed, high budget, bokeh, cinemascope, moody, epic, gorgeous, film grain, grainy",
@@ -28,14 +28,12 @@ module.exports = {
     category: "AI",
     guide: {
       en: `• {p}{n} <prompt> [--ar <ratio>] [--s <style>], or reply to an image\nAvailable Styles:\n• 1. Cinematic\n• 2. Photographic\n• 3. Anime\n• 4. Manga\n• 5. Digital Art\n• 6. Pixel Art\n• 7. Fantasy Art\n• 8. Neon Punk\n• 9. 3D Model`
-  }
+    }
   },
   onStart: async function ({ message, args, api, event }) {
     try {
-
-
       let prompt = "";
-      let ratio = "1:1"; 
+      let ratio = "1:1";
       let style = "";
 
       for (let i = 0; i < args.length; i++) {
@@ -53,13 +51,14 @@ module.exports = {
           prompt += args[i] + " ";
         }
       }
+
       prompt = prompt.trim();
       if (!prompt) return message.reply("❌ | Please provide a prompt.");
       if (style && !styleMap[style]) {
         return message.reply(`❌ | Invalid style: ${style}. Please provide a valid style number (1-9).• \nAvailable Styles:\n• 1. Cinematic\n• 2. Photographic\n• 3. Anime\n• 4. Manga\n• 5. Digital Art\n• 6. Pixel Art\n• 7. Fantasy Art\n• 8. Neon Punk\n• 9. 3D Model`);
       }
 
-      const startTime = Date.now(); 
+      const startTime = Date.now();
       api.setMessageReaction("⏳", event.messageID, () => {}, true);
 
       const styledPrompt = `${prompt}, ${styleMap[style] || ""}`.trim();
@@ -94,37 +93,36 @@ module.exports = {
         })
       );
 
-      const [width, height] = ratio.split(":").map(Number);
+      const [w, h] = ratio.split(":").map(Number);
       const resizeWidth = 1600;
-      const resizeHeight = Math.floor((resizeWidth * height) / width);
+      const resizeHeight = Math.floor((resizeWidth * h) / w);
+
+      const canvas = createCanvas(resizeWidth * 2, resizeHeight * 2);
+      const ctx = canvas.getContext("2d");
 
       const loadedImages = await Promise.all(
-        images.map((img) => sharp(img).resize(resizeWidth, resizeHeight).toBuffer())
+        images.map((img) => loadImage(img))
       );
 
-      const compositeImages = [
-        { input: loadedImages[0], left: 0, top: 0 },
-        { input: loadedImages[1], left: resizeWidth, top: 0 },
-        { input: loadedImages[2], left: 0, top: resizeHeight },
-        { input: loadedImages[3], left: resizeWidth, top: resizeHeight }
-      ];
+      ctx.drawImage(loadedImages[0], 0, 0, resizeWidth, resizeHeight);
+      ctx.drawImage(loadedImages[1], resizeWidth, 0, resizeWidth, resizeHeight);
+      ctx.drawImage(loadedImages[2], 0, resizeHeight, resizeWidth, resizeHeight);
+      ctx.drawImage(loadedImages[3], resizeWidth, resizeHeight, resizeWidth, resizeHeight);
 
       const combinedImagePath = path.join(cacheFolderPath, `image_combined_${Date.now()}.jpg`);
-      await sharp({
-        create: {
-          width: resizeWidth * 2,
-          height: resizeHeight * 2,
-          channels: 3,
-          background: { r: 255, g: 255, b: 255 }
-        }
-      })
-        .composite(compositeImages)
-        .toFile(combinedImagePath);
+      const out = fs.createWriteStream(combinedImagePath);
+      const stream = canvas.createJPEGStream();
+      stream.pipe(out);
 
-        const timeTaken = ((Date.now() - startTime) / 1000).toFixed(2); 
-        api.setMessageReaction("✅", event.messageID, () => {}, true);
+      await new Promise((resolve, reject) => {
+        out.on("finish", resolve);
+        out.on("error", reject);
+      });
 
-        const reply = await message.reply({
+      const timeTaken = ((Date.now() - startTime) / 1000).toFixed(2);
+      api.setMessageReaction("✅", event.messageID, () => {}, true);
+
+      const reply = await message.reply({
         body: `Select an image by replying with 1, 2, 3, or 4.\n\nTime taken: ${timeTaken} seconds`,
         attachment: fs.createReadStream(combinedImagePath)
       });
@@ -141,14 +139,13 @@ module.exports = {
         images.forEach((img) => fs.unlinkSync(img));
         fs.unlinkSync(combinedImagePath);
       }, 300000);
-
-
     } catch (error) {
       console.error(error);
       message.reply("❌ | Failed to generate images. Please try again later.");
       api.setMessageReaction("❌", event.messageID, () => {}, true);
     }
   },
+
   onReply: async function ({ event, Reply, message }) {
     const index = parseInt(event.body.trim());
     if (isNaN(index) || index < 1 || index > 4) {
