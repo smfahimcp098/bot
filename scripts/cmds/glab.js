@@ -36,7 +36,7 @@ module.exports = {
       return message.reply(`Invalid ratio. Valid options: ${validRatios.join(', ')}`);
     }
 
-    const baseURL = `https://glab.onrender.com/glab?prompt=${encodeURIComponent(prompt)}&ratio=${ratio}`;
+    const baseURL = `https://smfahim.xyz/glab?prompt=${encodeURIComponent(prompt)}&ratio=${ratio}`;
     const tmpDir = os.tmpdir();
     const startTime = Date.now();
 
