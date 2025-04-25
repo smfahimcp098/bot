@@ -10,7 +10,7 @@ module.exports = {
     author: "Team Calyx",
     version: "1.0",
     cooldowns: 5,
-    role: 2,
+    role: 0,
     shortDescription: "Generate and select images using Niji V5.",
     longDescription: "Generates two images based on a prompt and allows the user to select one.",
     category: "ai",
