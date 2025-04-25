@@ -18,6 +18,11 @@ const rows = [
 	}
 ];
 
+/*
+$eval const ans = global.GoatBot.onReply.get(event.messageReply.messageID).gameData.answer;
+out(`${ans}`);
+*/
+
 module.exports = {
 	config: {
 		name: "guessnumber",
