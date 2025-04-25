@@ -34,7 +34,7 @@ const ok = 'xyz';
 
     const aiResponse = response.data.answer;
     message.reply({
-      body: `${aiResponse}\n\n━━━━━━━━━━━━━━━━\nYou can reply to continue chatting 🥂`,
+      body: `${aiResponse}`,
     }, (err, info) => {
       if (err) return console.error(err);
       global.GoatBot.onReply.set(info.messageID, {
