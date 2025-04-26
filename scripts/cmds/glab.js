@@ -7,135 +7,110 @@ const { createCanvas, loadImage } = require("canvas");
 module.exports = {
   config: {
     name: "glab",
-    version: "2.2",
+    version: "2.3",
     author: "Vincenzo",
     countDown: 10,
     role: 0,
-    shortDescription: {
-      en: 'Premium Image Generation'
-    },
-    longDescription: {
-      en: "Generate 4 AI images in grid format and select with U1-U4"
-    },
+    shortDescription: { en: 'Premium Image Generation' },
+    longDescription: { en: "Generate 4 AI images in grid format and select with U1-U4" },
     category: "image",
-    guide: {
-      en: '{pn} <prompt> | [ratio]\nEx: {pn} cyberpunk city | 1:1\n3:4\n4:3\n9:16\n16:9'
-    }
+    guide: { en: '{pn} <prompt> | [ratio]\nEx: {pn} cyberpunk city | 1:1\n3:4\n4:3\n9:16\n16:9' }
   },
 
   onStart: async function ({ message, api, args, event }) {
     const text = args.join(' ');
     if (!text) return message.reply("Please provide a prompt");
 
-    const parts = text.split('|').map(part => part.trim());
-    const prompt = parts[0];
-    const ratio = parts[1] || '1:1';
+    const [promptPart, ratioPart] = text.split('|').map(p => p.trim());
+    const prompt = promptPart;
+    const ratio = ratioPart || '1:1';
 
-    const validRatios = ['1:1', '4:3', '3:4', '16:9', '9:16'];
+    const validRatios = ['1:1','4:3','3:4','16:9','9:16'];
     if (!validRatios.includes(ratio)) {
       return message.reply(`Invalid ratio. Valid options: ${validRatios.join(', ')}`);
     }
 
     const baseURL = `https://smfahim.xyz/glab?prompt=${encodeURIComponent(prompt)}&ratio=${ratio}`;
     const tmpDir = os.tmpdir();
-    const startTime = Date.now();
+    const t0 = Date.now();
 
     try {
       api.setMessageReaction("⏳", event.messageID, () => {}, true);
-
-      const processingMsg = await message.reply(`🔄 Generating ${ratio} images...`);
-      const processingMsgID = processingMsg.messageID;
+      const procMsg = await message.reply(`🔄 Generating images (${ratio})...`);
+      const procMsgID = procMsg.messageID;
 
       const res = await axios.get(baseURL);
-      const images = res.data.result;
+      const images = res.data.result || [];
 
-      if (!images || images.length === 0) {
-        await api.unsendMessage(processingMsgID);
-        return message.reply("❌ No images generated. Please try another prompt.");
+      if (!images.length) {
+        await api.unsendMessage(procMsgID);
+        return message.reply("❌ No images generated. Try another prompt.");
       }
 
-      const imagePaths = [];
-      for (let i = 0; i < Math.min(4, images.length); i++) {
-        try {
-          const base64Data = images[i].encodedImage.split(',')[1];
-          const buffer = Buffer.from(base64Data, 'base64');
-          const filename = `glab_${i}_${Date.now()}.jpg`;
-          const filePath = path.join(tmpDir, filename);
-          fs.writeFileSync(filePath, buffer);
-          imagePaths.push(filePath);
-        } catch (e) {
-          console.error(`Error saving image ${i}:`, e);
-        }
-      }
+      // Save up to 4 images
+      const imagePaths = images.slice(0,4).map((img, i) => {
+        const b64 = img.encodedImage.split(',')[1];
+        const buf = Buffer.from(b64, 'base64');
+        const filename = `glab_${i}_${Date.now()}.jpg`;
+        const filePath = path.join(tmpDir, filename);
+        fs.writeFileSync(filePath, buf);
+        return filePath;
+      });
 
-      if (imagePaths.length === 0) {
-        await api.unsendMessage(processingMsgID);
-        return message.reply("❌ Failed to save any images.");
-      }
-
-      const loadedImages = await Promise.all(imagePaths.map(p => loadImage(p)));
-      const imgWidth = loadedImages[0].width;
-      const imgHeight = loadedImages[0].height;
-
-      const canvas = createCanvas(imgWidth * 2, imgHeight * 2);
+      // Load & composite
+      const loaded = await Promise.all(imagePaths.map(p => loadImage(p)));
+      const w = loaded[0].width, h = loaded[0].height;
+      const canvas = createCanvas(w*2, h*2);
       const ctx = canvas.getContext('2d');
+      ctx.drawImage(loaded[0], 0, 0, w, h);
+      ctx.drawImage(loaded[1], w, 0, w, h);
+      ctx.drawImage(loaded[2], 0, h, w, h);
+      ctx.drawImage(loaded[3], w, h, w, h);
 
-      ctx.drawImage(loadedImages[0], 0, 0, imgWidth, imgHeight);
-      ctx.drawImage(loadedImages[1], imgWidth, 0, imgWidth, imgHeight);
-      ctx.drawImage(loadedImages[2], 0, imgHeight, imgWidth, imgHeight);
-      ctx.drawImage(loadedImages[3], imgWidth, imgHeight, imgWidth, imgHeight);
-
+      // Write combined
       const combinedPath = path.join(tmpDir, `glab_combined_${Date.now()}.jpg`);
-      const buffer = canvas.toBuffer('image/jpeg', { quality: 0.95 });
-      fs.writeFileSync(combinedPath, buffer);
+      fs.writeFileSync(combinedPath, canvas.toBuffer('image/jpeg', { quality: 0.95 }));
 
-      const endTime = Date.now();
-      const generationTime = ((endTime - startTime)/1000).toFixed(1);
+      const t1 = Date.now();
+      const timeSec = ((t1 - t0)/1000).toFixed(1);
 
-      await api.unsendMessage(processingMsgID);
-
-      const sentMsg = await message.reply({
-        body: `U1, U2, U3, U4\nTime: ${generationTime}s`,
+      await api.unsendMessage(procMsgID);
+      const sent = await message.reply({
+        body: `Reply with U1, U2, U3 or U4 to select an image.\nTime: ${timeSec}s`,
         attachment: fs.createReadStream(combinedPath)
       });
 
-      global.GoatBot.onReply.set(sentMsg.messageID, {
-        commandName: this.config.name,
-        messageID: sentMsg.messageID,
-        imagePaths,
-        combinedPath,
-        author: event.senderID
+      // register onReply
+      global.GoatBot.onReply.set(sent.messageID, {
+        author: event.senderID,
+        imagePaths
       });
 
-    } catch (error) {
-      console.error("Error:", error);
-      message.reply("❌ Image generation failed. Please try again later.");
+    } catch (e) {
+      console.error(e);
+      message.reply("❌ Image generation failed.");
     } finally {
       api.setMessageReaction("✅", event.messageID, () => {}, true);
     }
   },
 
-  onReply: async function ({ event, api, Reply, message }) {
-    const { author, imagePaths, messageID } = Reply;
+  onReply: async function ({ event, api, Reply }) {
+    const { author, imagePaths } = Reply;
     if (event.senderID !== author) return;
 
-    const selection = event.body.toLowerCase();
-    const validSelections = ['u1', 'u2', 'u3', 'u4'];
-
-    if (validSelections.includes(selection)) {
-      const index = parseInt(selection.charAt(1)) - 1;
-      if (imagePaths[index]) {
-        await message.reply({
-          attachment: fs.createReadStream(imagePaths[index])
-        });
-      } else {
-        message.reply("❌ Selected image not available.");
-      }
-    } else {
-      message.reply("⚠️ Please reply with U1, U2, U3 or U4 to select an image.");
+    const sel = event.body.trim().toLowerCase();
+    const valid = ['u1','u2','u3','u4'];
+    if (!valid.includes(sel)) {
+      return api.sendMessage("⚠️ Reply with U1, U2, U3 or U4.", event.threadID, event.messageID);
     }
 
-    global.GoatBot.onReply.delete(messageID);
-    // ফাইল delete করার কিছু নেই এখানে আর।
+    const idx = parseInt(sel.charAt(1), 10) - 1;
+    if (imagePaths[idx]) {
+      await api.sendMessage({ attachment: fs.createReadStream(imagePaths[idx]) }, event.threadID, event.messageID);
+    } else {
+      await api.sendMessage("❌ Selected image not available.", event.threadID, event.messageID);
+    }
+
+    global.GoatBot.onReply.delete(event.messageReply.mid);
   }
 };
