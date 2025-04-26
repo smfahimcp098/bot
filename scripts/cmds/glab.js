@@ -86,11 +86,8 @@ module.exports = {
       ctx.drawImage(loadedImages[3], imgWidth, imgHeight, imgWidth, imgHeight);
 
       const combinedPath = path.join(tmpDir, `glab_combined_${Date.now()}.jpg`);
-      const out = fs.createWriteStream(combinedPath);
-      const stream = canvas.createJPEGStream({ quality: 0.95 });
-      stream.pipe(out);
-
-      await new Promise((resolve) => out.on('finish', resolve));
+      const buffer = canvas.toBuffer('image/jpeg', { quality: 0.95 });
+      fs.writeFileSync(combinedPath, buffer);
 
       const endTime = Date.now();
       const generationTime = ((endTime - startTime)/1000).toFixed(1);
@@ -119,7 +116,7 @@ module.exports = {
   },
 
   onReply: async function ({ event, api, Reply, message }) {
-    const { author, imagePaths, combinedPath, messageID } = Reply;
+    const { author, imagePaths, messageID } = Reply;
     if (event.senderID !== author) return;
 
     const selection = event.body.toLowerCase();
@@ -127,23 +124,18 @@ module.exports = {
 
     if (validSelections.includes(selection)) {
       const index = parseInt(selection.charAt(1)) - 1;
-      try {
+      if (imagePaths[index]) {
         await message.reply({
           attachment: fs.createReadStream(imagePaths[index])
         });
-      } catch (e) {
-        message.reply("❌ Failed to send selected image.");
+      } else {
+        message.reply("❌ Selected image not available.");
       }
     } else {
       message.reply("⚠️ Please reply with U1, U2, U3 or U4 to select an image.");
     }
 
     global.GoatBot.onReply.delete(messageID);
-    try {
-      imagePaths.forEach(p => fs.unlinkSync(p));
-      fs.unlinkSync(combinedPath);
-    } catch (e) {
-      console.error("Cleanup error:", e);
-    }
+    // ফাইল delete করার কিছু নেই এখানে আর।
   }
 };
