@@ -7,7 +7,7 @@ const { createCanvas, loadImage } = require("canvas");
 module.exports = {
   config: {
     name: "glab",
-    version: "2.3",
+    version: "2.4",
     author: "Vincenzo",
     countDown: 10,
     role: 0,
@@ -37,13 +37,13 @@ module.exports = {
     try {
       api.setMessageReaction("⏳", event.messageID, () => {}, true);
       const procMsg = await message.reply(`🔄 Generating images (${ratio})...`);
-      const procMsgID = procMsg.messageID;
+      const procID = procMsg.messageID;
 
       const res = await axios.get(baseURL);
       const images = res.data.result || [];
 
-      if (!images.length) {
-        await api.unsendMessage(procMsgID);
+      if (images.length === 0) {
+        await api.unsendMessage(procID);
         return message.reply("❌ No images generated. Try another prompt.");
       }
 
@@ -57,7 +57,7 @@ module.exports = {
         return filePath;
       });
 
-      // Load & composite
+      // Composite into one canvas
       const loaded = await Promise.all(imagePaths.map(p => loadImage(p)));
       const w = loaded[0].width, h = loaded[0].height;
       const canvas = createCanvas(w*2, h*2);
@@ -67,41 +67,46 @@ module.exports = {
       ctx.drawImage(loaded[2], 0, h, w, h);
       ctx.drawImage(loaded[3], w, h, w, h);
 
-      // Write combined
       const combinedPath = path.join(tmpDir, `glab_combined_${Date.now()}.jpg`);
       fs.writeFileSync(combinedPath, canvas.toBuffer('image/jpeg', { quality: 0.95 }));
 
       const t1 = Date.now();
       const timeSec = ((t1 - t0)/1000).toFixed(1);
 
-      await api.unsendMessage(procMsgID);
+      await api.unsendMessage(procID);
       const sent = await message.reply({
         body: `Reply with U1, U2, U3 or U4 to select an image.\nTime: ${timeSec}s`,
         attachment: fs.createReadStream(combinedPath)
       });
 
-      // register onReply
+      // register for onReply
       global.GoatBot.onReply.set(sent.messageID, {
+        commandName: this.config.name,
+        messageID: sent.messageID,
         author: event.senderID,
         imagePaths
       });
 
     } catch (e) {
-      console.error(e);
-      message.reply("❌ Image generation failed.");
+      console.error("Error in onStart:", e);
+      await message.reply("❌ Image generation failed. Please try again later.");
     } finally {
       api.setMessageReaction("✅", event.messageID, () => {}, true);
     }
   },
 
   onReply: async function ({ event, api, Reply }) {
-    const { author, imagePaths } = Reply;
+    const { author, imagePaths, messageID, commandName } = Reply;
+    // ensure only the original user can reply
     if (event.senderID !== author) return;
+
+    // Check the commandName to avoid misfires
+    if (commandName !== this.config.name) return;
 
     const sel = event.body.trim().toLowerCase();
     const valid = ['u1','u2','u3','u4'];
     if (!valid.includes(sel)) {
-      return api.sendMessage("⚠️ Reply with U1, U2, U3 or U4.", event.threadID, event.messageID);
+      return api.sendMessage("⚠️ Please reply with U1, U2, U3 or U4.", event.threadID, event.messageID);
     }
 
     const idx = parseInt(sel.charAt(1), 10) - 1;
@@ -111,6 +116,7 @@ module.exports = {
       await api.sendMessage("❌ Selected image not available.", event.threadID, event.messageID);
     }
 
-    global.GoatBot.onReply.delete(event.messageReply.mid);
+    // clear mapping—files are not deleted, so you can U1 then U2 etc.
+    global.GoatBot.onReply.delete(messageID);
   }
 };
