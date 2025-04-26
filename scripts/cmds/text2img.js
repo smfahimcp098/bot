@@ -63,7 +63,7 @@ Ratios: 1:1, 2:3, 3:2, 3:4, 4:3, 9:16, 16:9`
     }
 
     // Build API URL (model query param for style)
-    const apiUrl = `https://smfahim.xyz/wan-ai?prompt=${encodeURIComponent(prompt)}` +
+    const apiUrl = `https://smfahim.xyz/text2image?prompt=${encodeURIComponent(prompt)}` +
                    `&ratio=${encodeURIComponent(ratio)}` +
                    `&model=${encodeURIComponent(style)}`;
 
