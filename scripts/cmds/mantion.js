@@ -1,74 +1,54 @@
 module.exports = {
- config: {
- name: "mention",
- aliases: ["tag"],
- version: "1.3",
- author: "Samir",
- role: 0,
- shortDescription: {
- en: "Mention a user",
- },
- longDescription: {
- en: "Mention a user using their name",
- },
- category: "tools",
- guide: {
- en: "{p}mention <name> [text]",
- },
- },
- onStart: async function ({ event, message, args, usersData }) {
- const { senderID, messageReply } = event;
- let id;
- let text;
-
- const findUserByName = async (name) => {
- const allUsers = await usersData.getAll();
- const keyWord = name.toLowerCase();
- return allUsers.filter(user => (user.name || "").toLowerCase().includes(keyWord));
- };
-
- if (args.length > 0) {
- let nameArg = args.slice(0, 2).join(" "); // Search by first 2 words
- let searchResults = await findUserByName(nameArg);
-
- if (searchResults.length === 0 && args.length > 2) {
- nameArg = args.slice(0, 3).join(" ");
- searchResults = await findUserByName(nameArg);
- }
-
- if (searchResults.length === 0) {
- return message.reply(`No user found with the name "${nameArg}".`);
- }
-
- const user = searchResults[0]; 
- id = user.userID; // Get user ID
- text = args.slice(nameArg.split(" ").length).join(" ");
- } else if (messageReply && messageReply.senderID) {
- id = parseInt(messageReply.senderID); 
- text = args.join(" ");
- } else {
- id = parseInt(senderID); 
- text = args.join(" ");
- }
-
- if (isNaN(id)) {
- return message.reply("Invalid user ID.");
- }
-
- const userData = await usersData.get(id);
- if (!userData) {
- return message.reply("User data not found.");
- }
-
- const mention = [{ id, tag: userData.name }];
-
- try {
- await message.reply({
- body: `${userData.name} ${text}`,
- mentions: mention,
- });
- } catch (error) {
- message.reply("Error while mentioning the user. Please try again later.");
- }
- },
+  config: {
+    name: "tag",
+    alises:[],
+    category: 'tag',
+    role:0,
+    author: 'dipto',
+    description: { en: 'Tags a user to the provided name or message reply.' },
+    guide: {
+      en: `1. Reply to a message\n2. Use {pm}tag [name]\n3. Use {pm}tag [name] [message] `
+    },
+  },
+  onStart: async ({ api, event, usersData, threadsData, args }) => {
+    const { threadID, messageID, messageReply } = event;
+    try {
+      const d = await threadsData.get(threadID);
+      const dd = d.members.map(gud => gud.name);
+      const pp = d.members.map(gud => gud.userID);
+      const combined = dd.map((name, index) => ({
+        Name: name,
+        UserId: pp[index]
+      }));
+      let namesToTag = [];
+      let extraMessage = args.join(' ');
+      let m = messageID;
+      if (messageReply) {
+        m = messageReply.messageID;
+        const uid = messageReply.senderID;
+        const name = await usersData.getName(uid);
+        namesToTag.push({ Name: name, UserId: uid });
+      } else {
+        extraMessage = args.slice(1).join(' ');
+        const namesToCheck = args.length > 0 ? [args[0]] : ['dip'];
+        namesToTag = combined.filter(member =>
+          namesToCheck.some(name => member.Name.toLowerCase().includes(name.toLowerCase())));
+        if (namesToTag.length === 0) {
+          return api.sendMessage('not found', threadID, messageID);
+        }
+      }
+      const mentions = namesToTag.map(({ Name, UserId }) => ({
+        tag: Name,
+        id: UserId
+      }));
+      const body = namesToTag.map(({ Name }) => Name).join(', ');
+      const finalBody = extraMessage ? `${body} - ${extraMessage}` : body;
+      api.sendMessage({
+          body: finalBody,
+          mentions
+        },threadID,m);
+    } catch (e) {
+      api.sendMessage(e.message, threadID, messageID);
+    }
+  }
 };
