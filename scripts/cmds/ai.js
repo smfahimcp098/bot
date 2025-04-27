@@ -27,8 +27,7 @@ const axios = require('axios');
 const sendMessage = async (message, question, event, config) => {
   try {
     const encodedQuestion = encodeURIComponent(question);
-const ok = 'xyz';
-    const response = await axios.get(`https://smfahim.${ok}/hercai?ask=${encodedQuestion}`);
+    const response = await axios.get(`https://smfahim.xyz/gpt-4o?ask=${encodedQuestion}`);
 
     if (response.status !== 200) throw new Error('API error');
 
