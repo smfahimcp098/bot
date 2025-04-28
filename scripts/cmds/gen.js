@@ -25,7 +25,7 @@ module.exports = {
     role: 0,
     shortDescription: "Generate and select images using XL3.1 Model.",
     longDescription: "Generates four images based on a prompt and allows the user to select one.",
-    category: "AI",
+    category: "ai",
     guide: {
       en: `• {p}{n} <prompt> [--ar <ratio>] [--s <style>], or reply to an image\nAvailable Styles:\n• 1. Cinematic\n• 2. Photographic\n• 3. Anime\n• 4. Manga\n• 5. Digital Art\n• 6. Pixel Art\n• 7. Fantasy Art\n• 8. Neon Punk\n• 9. 3D Model`
     }
