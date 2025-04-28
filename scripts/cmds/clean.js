@@ -9,7 +9,7 @@ module.exports = {
     author: "Fahim + Upol",
     countDown: 1,
     role: 0,
-    category: "group config",
+    category: "config",
     shortDescription: "Delete files and images",
     longDescription: "Clean cache & delete specific files or delete downloaded images.",
 
