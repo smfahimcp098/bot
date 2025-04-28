@@ -11,7 +11,7 @@ module.exports = {
     role: 0,
     shortDescription: "say something",
     longDescription: "",
-    category: "voice",
+    category: "utility",
     guide: "{pn} {{<say>}}"
   },
 
