@@ -8,11 +8,9 @@ module.exports.config = {
   role: 0, 
   author: "Dipto", 
   description: "MidJourney image generator",
-  usePrefix: true,
   guide: "{pn} [prompt]",
-  category: "𝗜𝗠𝗔𝗚𝗘 𝗚𝗘𝗡𝗘𝗥𝗔𝗧𝗢𝗥",
-  premium: true,
-  countDown: 35,
+  category: "ai",
+  countDown: 20,
 };
 
 module.exports.onReply = async function ({ api, event, message, Reply }) {
