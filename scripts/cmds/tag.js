@@ -2,7 +2,7 @@ module.exports = {
   config: {
     name: "tag",
     alises:[],
-    category: 'tag',
+    category: 'box chat',
     role:0,
     author: 'dipto',
     description: { en: 'Tags a user to the provided name or message reply.' },
