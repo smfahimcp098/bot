@@ -5,14 +5,14 @@ const moment = require('moment');
 module.exports = {
   config: {
     name: "stats",
-    aliases: ["up", "uptime"],
+    aliases: [],
     version: "1.0",
-    author: "Nova Calyx",
+    author: "Team Calyx",
     countDown: 5,
     role: 0,
     shortDescription: "Show bot statistics",
     longDescription: "Show the statistics of the bot",
-    category: "Info",
+    category: "utility",
     guide: {
       en: "{pn}"
     }
