@@ -10,7 +10,7 @@ module.exports = {
     longDescription: {
       en: "Displays real-time CPU temperature, usage, and system information. A premium command for tech enthusiasts."
     },
-    category: "system",
+    category: "utility",
     guide: {
       en: "Use {p}cpu to check the current CPU conditions and system information of the bot."
     }
