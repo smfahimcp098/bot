@@ -1,6 +1,6 @@
 const axios = require("axios");
 const { getStreamFromURL } = global.utils;
-const dipto = "https://noobs-api.top/dipto";
+const diptoApi = "https://noobs-api.top/dipto";
 module.exports.config = {
   name: "midjourney",
   aliases: ["mj"],
@@ -43,7 +43,7 @@ module.exports.onReply = async function ({ api, event, message, Reply }) {
      return message.reply("𝐏𝐥𝐞𝐚𝐬𝐞 𝐫𝐞𝐩𝐥𝐲 𝐚 𝐯𝐚𝐥𝐢𝐝 𝐨𝐩𝐭𝐢𝐨𝐧.\n\n𝟏. 𝐔𝟏\n𝟐. 𝐔𝟐\n𝟑. 𝐔𝟑\n𝟒. 𝐔𝟒\n🔄️\n𝟏. 𝐕𝟏\n𝟐. 𝐕𝟐\n𝟑. 𝐕𝟑\n𝟒. 𝐕𝟒");
     }
      const waitMsg2 = await message.reply("𝗪𝗮𝗶𝘁 𝗕𝗯𝘆 <😘");
-    const response = await axios.get(`${dipto}/midjourneyAction?action=${actionn}&image_id=${Reply.imageID}`)
+    const response = await axios.get(`${diptoApi}/midjourneyAction?action=${actionn}&image_id=${Reply.imageID}`)
     message.unsend(await waitMsg2.messageID);
     await api.sendMessage({ 
       body: `✅ | 𝙷𝚎𝚛𝚎'𝚜 𝚈𝚘𝚞𝚛 𝙸𝚖𝚊𝚐𝚎 <😘\n⚫ | 𝐌𝐨𝐫𝐞 𝐀𝐯𝐚𝐥𝐢𝐚𝐛𝐥𝐞 𝐀𝐜𝐭𝐢𝐨𝐧𝐬\n\n𝟏. 𝐩𝐚𝐧_𝐮𝐩\n𝟐. 𝐩𝐚𝐧_𝐥𝐞𝐟𝐭\n𝟑. 𝐩𝐚𝐧_𝐫𝐢𝐠𝐡𝐭\n𝟒. 𝐳𝐨𝐨𝐦_𝐨𝐮𝐭_𝟐𝐱𝟒\n𝟓. 𝐳𝐨𝐨𝐦_𝐨𝐮𝐭_𝟏_𝟓𝐱`,  
@@ -73,7 +73,7 @@ module.exports.onReply = async function ({ api, event, message, Reply }) {
     
      const waitMsg2 = await message.reply("𝗪𝗮𝗶𝘁 𝗕𝗯𝘆 <😘");
     try {
-    const response = await axios.get(`${dipto}/midjourneyAction?action=${actionn}&image_id=${Reply.imageID}`)
+    const response = await axios.get(`${diptoApi}/midjourneyAction?action=${actionn}&image_id=${Reply.imageID}`)
     message.unsend(await waitMsg2.messageID);
     await api.sendMessage({ 
       body: `✅ | 𝙷𝚎𝚛𝚎'𝚜 𝚈𝚘𝚞𝚛 𝙸𝚖𝚊𝚐𝚎 <😘`,  
@@ -95,7 +95,7 @@ module.exports.onStart = async function ({ message, api, args, event }) {
     }
     if (dipto) {
       const waitMsg = await message.reply("𝗪𝗮𝗶𝘁 𝗕𝗯𝘆 <😘");
-      const res = await axios.get(`${dipto}/midjourney?prompt=${dipto}&key=mjcudi`);
+      const res = await axios.get(`${diptoApi}/midjourney?prompt=${dipto}&key=mjcudi`);
       console.log(res.data);
       message.unsend(await waitMsg.messageID);
       await api.sendMessage({ 
