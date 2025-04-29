@@ -238,7 +238,8 @@ async function drawTextWithEmojis(ctx, text, x, y) {
 
 module.exports = {
   config: {
-    name: "gc",
+    name: "fakechat",
+    aliases: ["fc", "gc"],
     aliases: [],
     author: "ChatGpt | Your Dad",
     countDown: 5,
