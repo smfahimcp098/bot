@@ -21,7 +21,7 @@ module.exports = {
     const text = args.join(' ');
     if (!text) return message.reply("Please provide a prompt");
 
-    const [promptPart, ratioPart] = text.split('|').map(p => p.trim());
+    const [promptPart, ratioPart] = text.split('--ar').map(p => p.trim());
     const prompt = promptPart;
     const ratio = ratioPart || '1:1';
 
