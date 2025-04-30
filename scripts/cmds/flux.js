@@ -76,7 +76,7 @@ module.exports = {
       }
 
       const responsePromises = Array(2).fill(null).map(() => 
-        axios.get(`https://smfahim.xyz/tensorweb/fluxjourney`, { params })
+        axios.get(`https://smfahim.xyz/tensorweb/fluxpro`, { params })
       );
       
       const responses = await Promise.all(responsePromises);
