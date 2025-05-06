@@ -36,7 +36,7 @@ module.exports = {
           bio: '☘︎Hello! My owner/developer is Fahim Developer.\n☘︎This is my bot owner😗🌷'
         };
 
-        const videoUrl = 'https://i.ibb.co/fVsJTz3L/1963da52a06.jpg';
+        const videoUrl = 'https://i.imgur.com/UNbvDo6.jpg';
         const tmpFolderPath = path.join(__dirname, 'tmp');
 
         if (!fs.existsSync(tmpFolderPath)) {
