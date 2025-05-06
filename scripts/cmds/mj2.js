@@ -82,12 +82,12 @@ module.exports.onReply = async function ({ event, message, Reply }) {
     }
 
     const hasNewButtons = Array.isArray(result.buttons) && result.buttons.length > 0;
-    const replyLabel = hasNewButtons
-      ? '✅ | Here’s your image! Reply U1–U4 for upscales.'
-      : '✅ | Here’s your image!';
+    // const replyLabel = hasNewButtons
+    //   ? '✅ | Here’s your image!'
+    //   : '✅ | Here’s your image!';
 
     const sent = await message.reply({
-      body: replyLabel,
+      body: "✅ | Job request successfull...",
       attachment: await getStreamFromURL(result.imageUrl)
     });
 
