@@ -6,7 +6,7 @@ module.exports.config = {
   name: "midjourney2",
   aliases: ["mj2"],
   version: "1.2",
-  role: 2,
+  role: 1,
   author: "S M Fahim | Rishad Apis",
   description: "MidJourney image generator with polling and action support",
   guide: "{pn} [prompt]",
