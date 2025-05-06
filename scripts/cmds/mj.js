@@ -5,7 +5,7 @@ module.exports.config = {
   name: "midjourney",
   aliases: ["mj"],
   version: "2.0",
-  role: 2, 
+  role: 1, 
   author: "Dipto", 
   description: "MidJourney image generator",
   guide: "{pn} [prompt]",
