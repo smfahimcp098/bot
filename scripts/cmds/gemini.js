@@ -243,7 +243,7 @@ function clearChatHistory(uid) {
 module.exports = {
   config: {
     name: "gemini",
-    aliases: [],
+    aliases: ["g"],
     version: "1.3",
     author: "Shikaki",
     countDown: 5,
