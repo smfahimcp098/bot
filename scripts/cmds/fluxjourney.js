@@ -61,6 +61,7 @@ module.exports = {
       }
 
       prompt = prompt.trim();
+      if (!prompt) return message.reply("❌ | Please provide a prompt.");
 
       if (style && !styleMap[style]) {
         api.setMessageReaction("❌", event.messageID, () => {}, true);
