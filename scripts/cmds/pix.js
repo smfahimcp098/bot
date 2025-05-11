@@ -5,7 +5,7 @@ const fs = require("fs");
 module.exports = {
 	config: {
 		name: "pix",
-		version: "3",
+		version: "4.0",
 		author: "Yeasin",
 		countDown: 5,
 		role: 2,
