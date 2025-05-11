@@ -7,7 +7,7 @@ module.exports = {
     version: "2.1",
     author: "Modified by ChatGPT",
     countDown: 5,
-    role: 0,
+    role: 2,
     shortDescription: "Auto thread approve/remove",
     category: "system",
     guide: {
