@@ -8,13 +8,13 @@ module.exports = {
 		version: "3",
 		author: "Yeasin",
 		countDown: 5,
-		role: 0,
+		role: 2,
 		shortDescription: "Image to animated kiss or hug or other style",
 		longDescription: "Convert an image into an animation {create account acc=<number>}",
 		category: "animation",
 		guide: {
 			en: '   {pn} acc=<number>: create account '
-			+ '\n   {pn} refresh: refresh cadit'
+			+ '\n   {pn} refresh: refresh credit'
 			+ '\n   {pn} sty=number: image animation'
 		}
 	},
@@ -45,10 +45,10 @@ module.exports = {
 					params: { file_link: update_link, file_name: file_name }
 				});
 				const file_upload_link = apiResponse.data.file_upload_link;
-				return api.sendMessage(`âœ… File updated successfully. New file link: ${file_upload_link}`, event.threadID, event.messageID);
+				return api.sendMessage(`✅ File updated successfully.\nNew file link: ${file_upload_link}`, event.threadID, event.messageID);
 			} catch (error) {
-				console.error("âŒ Update API error:", error.message);
-				return api.sendMessage("âŒ Update failed. Please try again later.", event.threadID, event.messageID);
+				console.error("❌ Update API error:", error.message);
+				return api.sendMessage("❌ Update failed. Please try again later.", event.threadID, event.messageID);
 			}
 		}
 
@@ -63,12 +63,12 @@ module.exports = {
 				} = apiResponse.data.output;
 
 				const total_account_number = nonzero_accounts + zero_accounts;
-				const replyMessage = `âœ… Refresh Completed:\n\nTotal Account: ${total_account_number}\nâ•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—\nðŸ”¹ Valid Accounts (Non-zero): ${nonzero_accounts}\nðŸ”¸ Zero Accounts: ${zero_accounts}\nðŸ’° Total Credit Sum: ${total_credit_sum}\nðŸ“‚File account link: ${file_upload_link}\nðŸ“‚File style link: ${file_upload_link2}\nâ•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•`;
+				const replyMessage = `✅ Refresh Completed:\n\nTotal Account: ${total_account_number}\n────────────────────────\n✔️ Valid Accounts (Non-zero): ${nonzero_accounts}\n❌ Zero Accounts: ${zero_accounts}\n💰 Total Credit Sum: ${total_credit_sum}\n📂 File account link: ${file_upload_link}\n📂 File style link: ${file_upload_link2}\n────────────────────────`;
 
 				return message.reply(replyMessage);
 			} catch (error) {
-				console.error("âŒ Refresh API error:", error.message);
-				return message.reply("âŒ Refresh failed. Please try again later.");
+				console.error("❌ Refresh API error:", error.message);
+				return message.reply("❌ Refresh failed. Please try again later.");
 			}
 		}
 
@@ -80,16 +80,16 @@ module.exports = {
 				const details = apiResponse.data.details;
 				const logdata = apiResponse.data;
 				if (!details || details.length === 0) {
-					return message.reply("âŒ No account details found.");
+					return message.reply("❌ No account details found.");
 				}
 				const formattedDetails = details.map(acc =>
-					`ðŸ”¹ Username: ${acc.Username}\nðŸ†” Account ID: ${acc.AccountId}\nðŸ”‘ Token: ${acc.Token}\nðŸ’° Total Credit: ${acc.TotalCredit}\nðŸ”„ Iteration: ${acc.iteration}`
-				).join("\nâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•\n");
+					`✔️ Username: ${acc.Username}\n🆔 Account ID: ${acc.AccountId}\n🔑 Token: ${acc.Token}\n💰 Total Credit: ${acc.TotalCredit}\n🔁 Iteration: ${acc.iteration}`
+				).join("\n────────────────────────\n");
 
-				return message.reply(`âœ… API Response:\n Account Details:\n\nâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•\n${formattedDetails}\nâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•\nðŸ“‚File account link: ${logdata.file_upload_link}\nðŸ“‚File style link: ${logdata.file_upload_link2}`);
+				return message.reply(`✅ API Response:\nAccount Details:\n\n────────────────────────\n${formattedDetails}\n────────────────────────\n📂 File account link: ${logdata.file_upload_link}\n📂 File style link: ${logdata.file_upload_link2}`);
 			} catch (error) {
-				console.error("âŒ Account API error:", error.message);
-				return message.reply("âŒ Failed to create accounts.");
+				console.error("❌ Account API error:", error.message);
+				return message.reply("❌ Failed to create accounts.");
 			}
 		}
 
@@ -100,33 +100,33 @@ module.exports = {
 				const styleResponse = await axios.get(pythonStyleApi);
 				const styles = styleResponse.data.style_name;
 				if (!styles || styles.length === 0) {
-					return api.sendMessage("âŒ No styles available.", event.threadID, event.messageID);
+					return api.sendMessage("❌ No styles available.", event.threadID, event.messageID);
 				}
 				const formattedStyles = styles.map((style, index) => `${index + 1}. ${style}`).join("\n");
-				return api.sendMessage(`âœ… Available Styles:\n${formattedStyles}`, event.threadID, event.messageID);
+				return api.sendMessage(`✅ Available Styles:\n${formattedStyles}`, event.threadID, event.messageID);
 			} catch (err) {
-				console.error("âŒ Style listing error:", err.message);
-				return api.sendMessage("âŒ Couldn't fetch styles.", event.threadID, event.messageID);
+				console.error("❌ Style listing error:", err.message);
+				return api.sendMessage("❌ Couldn't fetch styles.", event.threadID, event.messageID);
 			}
 		}
 
 		// IMAGE ANIMATION
 		if (!styNumber) {
-			return api.sendMessage("âŒ Please provide a style number. Example: sty=1", event.threadID, event.messageID);
+			return api.sendMessage("❌ Please provide a style number. Example: sty=1", event.threadID, event.messageID);
 		}
 		if (event.type !== "message_reply" || !event.messageReply.attachments || event.messageReply.attachments.length === 0) {
-			return api.sendMessage("âŒ You must reply to a photo", event.threadID, event.messageID);
+			return api.sendMessage("❌ You must reply to a photo", event.threadID, event.messageID);
 		}
 		styNumber = parseInt(styNumber);
 		if (isNaN(styNumber) || styNumber <= 0) {
-			return api.sendMessage("âŒ Invalid style number.", event.threadID, event.messageID);
+			return api.sendMessage("❌ Invalid style number.", event.threadID, event.messageID);
 		}
 
 		const pythonStyleApi = "https://test-flask-yl8n.onrender.com/style_pixserver";
 		const styleResponse = await axios.get(pythonStyleApi);
 		const styles = styleResponse.data.style_name;
 		if (!styles || styles.length === 0 || styNumber > styles.length) {
-			return api.sendMessage(`âŒ Invalid style number. Choose 1-${styles.length}`, event.threadID, event.messageID);
+			return api.sendMessage(`❌ Invalid style number. Choose 1-${styles.length}`, event.threadID, event.messageID);
 		}
 		const selectedStyle = styles[styNumber - 1];
 
@@ -153,41 +153,11 @@ module.exports = {
 		});
 		const { video_url, total_accounts, total_credit, last_time_credit } = pixserverResponse.data;
 		if (!video_url) {
-			return api.sendMessage("âŒ Video URL not found from API response", event.threadID, event.messageID);
+			return api.sendMessage("❌ Animation generation failed.", event.threadID, event.messageID);
 		}
-
-		const messageBody = `âœ… Your animated video using style: ${selectedStyle}\n\nðŸ“Š Account Summary:\nðŸ“Œ Total Accounts: ${total_accounts}\nðŸ’° Total Credit: ${total_credit}\nâ±ï¸ End token: ${last_time_credit}`;
-		const videoSavePath = path.join(tempDir, `video-${Date.now()}.mp4`);
-
-		// Retry download
-		const downloadVideoWithRetry = async (url, savePath, retries = 10, delay = 60000) => {
-			for (let attempt = 1; attempt <= retries; attempt++) {
-				try {
-					console.log(`ðŸ”„ Downloading video... Attempt ${attempt}`);
-					const response = await axios({ method: 'GET', url, responseType: 'stream' });
-					return new Promise((resolve, reject) => {
-						const writer = fs.createWriteStream(savePath);
-						response.data.pipe(writer);
-						writer.on('finish', () => resolve(savePath));
-						writer.on('error', reject);
-					});
-				} catch (error) {
-					console.error(`âŒ Attempt ${attempt} failed: ${error.message}`);
-					if (attempt < retries) await new Promise(r => setTimeout(r, delay));
-					else throw new Error("âŒ Maximum retry limit reached.");
-				}
-			}
-		};
-
-		try {
-			await downloadVideoWithRetry(video_url, videoSavePath);
-			return api.sendMessage({
-				body: messageBody,
-				attachment: fs.createReadStream(videoSavePath)
-			}, event.threadID, event.messageID);
-		} catch (err) {
-			console.error("âŒ Final download error:", err.message);
-			return api.sendMessage("âŒ Failed to download video. Please try again later.", event.threadID, event.messageID);
-		}
+		return api.sendMessage({
+			body: `✅ Animation Created!\n\n🎞️ Style: ${selectedStyle}\n👥 Accounts Used: ${total_accounts}\n💳 Total Credit: ${total_credit}\n⏳ Last Time Credit: ${last_time_credit}`,
+			attachment: await global.utils.getStreamFromURL(video_url)
+		}, event.threadID, event.messageID);
 	}
 };
