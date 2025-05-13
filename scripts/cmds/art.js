@@ -1,58 +1,52 @@
 const axios = require("axios");
-const tinyurl = require("tinyurl");
 
 module.exports = {
   config: {
     name: "art",
-    role: 0,
+    role: 1,
     author: "S M Fahim",
     countDown: 5,
-    longDescription: "Art images",
+    longDescription: "Art image",
     category: "image",
     guide: {
-      en: "${pn} reply to an image with a prompt and choose model 1 - 10"
+      en: "${pn} reply to an image"
     }
   },
 
-  onStart: async function ({ message, api, args, event }) {
-    const text = args.join(' ');
-
+  onStart: async function ({ message, api, event }) {
     if (!event.messageReply || !event.messageReply.attachments || !event.messageReply.attachments[0]) {
       return message.reply("⚠️ Please reply to an image.");
     }
 
-    const imgurl = encodeURIComponent(event.messageReply.attachments[0].url);
-    const [model] = text.split('|').map((t) => t.trim());
-    const puti = model || "6";
+    const originalUrl = event.messageReply.attachments[0].url;
+    const encodedOriginal = encodeURIComponent(originalUrl);
 
-    const glamURL = `https://smfahim.xyz/art/glamai?url=${imgurl}&filter=${puti}`;
-    api.setMessageReaction("⏰", event.messageID, () => {}, true);
+    api.setMessageReaction("⏳", event.messageID, () => {}, true);
+    const waitMsg = await message.reply("✅ Uploading image, please wait...");
 
     try {
-      message.reply("✅ Generating image, please wait...", async (err, info) => {
-        // Call Glam API to get final media_urls
-        const { data } = await axios.get(glamURL);
-        if (!data.media_urls || !data.media_urls[0]) {
-          return message.reply("❌ Failed to get image.");
-        }
+      const uploadRes = await axios.get(
+        `https://www.smfahim.xyz/imgbb?url=${encodedOriginal}`
+      );
+      const uploaded = uploadRes.data?.image?.url;
+      if (!uploaded) throw new Error("Upload failed");
 
-        const finalImage = data.media_urls[0];
-        const shortUrl = await tinyurl.shorten(finalImage);
-        const imageStream = await global.utils.getStreamFromURL(finalImage);
+      const artUrl = `https://www.smfahim.xyz/art/glamai?url=${encodeURIComponent(uploaded)}`;
+      const artRes = await axios.get(artUrl, { responseType: 'stream' });
+      const imageStream = artRes.data;
 
-        const msg = {
-          body: shortUrl,
-          attachment: imageStream
-        };
-
-        const replyMsg = await message.reply(msg);
-        message.unsend(info.messageID);
-        api.setMessageReaction("✅", event.messageID, () => {}, true);
+      await message.reply({
+        body: "🖼️ Here is your art.",
+        attachment: imageStream
       });
+      api.setMessageReaction("✅", event.messageID, () => {}, true);
+
     } catch (err) {
       console.error(err);
-      message.reply("❌ Error generating art. Try again.");
+      await message.reply("❌ Something went wrong. Please try again.");
       api.setMessageReaction("❌", event.messageID, () => {}, true);
+    } finally {
+      message.unsend(waitMsg.messageID);
     }
   }
 };
