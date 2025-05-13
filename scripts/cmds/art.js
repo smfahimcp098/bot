@@ -3,7 +3,7 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "art",
-    role: 1,
+    role: 0,
     author: "S M Fahim",
     countDown: 5,
     longDescription: "Art image",
