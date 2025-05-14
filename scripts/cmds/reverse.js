@@ -16,7 +16,7 @@ module.exports = {
     author: "Team Calyx",
     shortDescription: "Reverse a video",
     longDescription: "Reverse a video for fun or creative effects.",
-    category: "video",
+    category: "utility",
     guide: {
       en: "{pn}reverse"
     }
