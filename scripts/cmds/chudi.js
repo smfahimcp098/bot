@@ -4,7 +4,7 @@ module.exports.config = {
     role: 2,
     author: "Mesbah Bb'e",
     description: "5 বারের জন্য ক্রমাগত বন্ধুর ট্যাগ ট্যাগ করুন\nসেই ব্যক্তিকে আত্মা কলিং বলা যেতে পারে",
-    category: "nsfw",
+    category: "game",
     guide: " please @mention",
     coolDown: 10
 }
