@@ -9,7 +9,7 @@ module.exports = {
     countDown: 5,
     role: 2,
     shortDescription: "Auto thread approve/remove",
-    category: "system",
+    category: "admin",
     guide: {
       en: "{pn} [add/remove] - Add or remove current thread from whitelist"
     }
