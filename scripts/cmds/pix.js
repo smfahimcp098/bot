@@ -35,7 +35,7 @@ module.exports = {
 		if (update && !isRefreshCommand && !accNumber && !isStyleCommand && !styNumber) {
 			const update_link = args[1];
 			const file_name = args[2];
-			const pythonApiUrl = "https://test-flask-yl8n.onrender.com/update_file";
+			const pythonApiUrl = "https://pixverser.smfahim.xyz/update_file";
 
 			try {
 				const apiResponse = await axios.post(pythonApiUrl, null, {
@@ -53,7 +53,7 @@ module.exports = {
 		}
 
 		if (isRefreshCommand && !accNumber && !isStyleCommand && !styNumber) {
-			const pythonApiUrl = "https://test-flask-yl8n.onrender.com/image_pixserver_refresh";
+			const pythonApiUrl = "https://pixverser.smfahim.xyz/image_pixserver_refresh";
 			try {
 				const apiResponse = await axios.get(pythonApiUrl);
 				const { nonzero_accounts, zero_accounts, total_credit_sum, file_upload_link, file_upload_link2 } = apiResponse.data.output;
@@ -76,7 +76,7 @@ File style link: ${file_upload_link2}`;
 		}
 
 		if (accNumber && !isStyleCommand && !isRefreshCommand && !styNumber) {
-			const pythonApiUrl = "https://test-flask-yl8n.onrender.com/automation_account";
+			const pythonApiUrl = "https://pixverser.smfahim.xyz/automation_account";
 			const apiResponse = await axios.post(pythonApiUrl, { number: accNumber });
 			const details = apiResponse.data.details;
 			const logdata = apiResponse.data;
@@ -95,7 +95,7 @@ Iteration: ${acc.iteration}`
 		}
 
 		if (isStyleCommand && !styNumber && !accNumber && !isRefreshCommand) {
-			const pythonStyleApi = "https://test-flask-yl8n.onrender.com/style_pixserver";
+			const pythonStyleApi = "https://pixverser.smfahim.xyz/style_pixserver";
 			const styleResponse = await axios.get(pythonStyleApi);
 			const styles = styleResponse.data.style_name;
 			if (!styles || styles.length === 0) {
@@ -116,7 +116,7 @@ Iteration: ${acc.iteration}`
 			return api.sendMessage("Invalid style number. Please provide a valid number.", event.threadID, event.messageID);
 		}
 
-		const pythonStyleApi = "https://test-flask-yl8n.onrender.com/style_pixserver";
+		const pythonStyleApi = "https://pixverser.smfahim.xyz/style_pixserver";
 		const styleResponse = await axios.get(pythonStyleApi);
 		const styles = styleResponse.data.style_name;
 		if (!styles || styles.length === 0) {
@@ -144,7 +144,7 @@ Iteration: ${acc.iteration}`
 
 		await downloadImage(imageUrl, imageSavePath);
 
-		const imagePixserverUrl = "https://test-flask-yl8n.onrender.com/image_pixserver";
+		const imagePixserverUrl = "https://pixverser.smfahim.xyz/image_pixserver";
 		const pixserverResponse = await axios.get(imagePixserverUrl, {
 			params: { file: imageUrl, style: styNumber }
 		});
