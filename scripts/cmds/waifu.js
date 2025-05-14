@@ -10,7 +10,7 @@ module.exports = {
     role: 0,
     shortDescription: "get random waifu",
     longDescription: "Get waifu neko: waifu, neko, shinobu, megumin, bully, cuddle, cry, kiss, lick, hug, awoo, pat, smug, bonk, yeet, blush, smile, wave, highfive, handhold, nom, bite, glomp, slap, kill, kick, happy, wink, poke, dance, cringe",
-    category: "𝗔𝗡𝗜𝗠𝗘",
+    category: "image",
     guide: "{pn} {{<name>}}"
   },
 
