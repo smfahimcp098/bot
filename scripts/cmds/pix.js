@@ -11,7 +11,7 @@ module.exports = {
 		role: 2,
 		shortDescription: "Image to animated kiss or hug or other style",
 		longDescription: "Convert an image into an animation {create account acc=<number>}",
-		category: "animation",
+		category: "ai",
 		guide: {
 			en: '   {pn} acc=<number>: create account '
 			+ '\n   {pn} refresh: refresh credit'
@@ -38,7 +38,7 @@ module.exports = {
 		if (update && !isRefreshCommand && !accNumber && !isStyleCommand && !styNumber) {
 			const update_link = args[1];
 			const file_name = args[2];
-			const pythonApiUrl = "https://test-flask-yl8n.onrender.com/update_file";
+			const pythonApiUrl = "https://pixverser.smfahim.xyz/update_file";
 
 			try {
 				const apiResponse = await axios.post(pythonApiUrl, null, {
@@ -74,7 +74,7 @@ module.exports = {
 
 		// ACCOUNT CREATION
 		if (accNumber && !isStyleCommand && !isRefreshCommand && !styNumber) {
-			const pythonApiUrl = "https://test-flask-yl8n.onrender.com/automation_account";
+			const pythonApiUrl = "https://pixverser.smfahim.xyz/automation_account";
 			try {
 				const apiResponse = await axios.post(pythonApiUrl, { number: accNumber });
 				const details = apiResponse.data.details;
@@ -95,7 +95,7 @@ module.exports = {
 
 		// STYLE LISTING
 		if (isStyleCommand && !styNumber && !accNumber && !isRefreshCommand) {
-			const pythonStyleApi = "https://test-flask-yl8n.onrender.com/style_pixserver";
+			const pythonStyleApi = "https://pixverser.smfahim.xyz/style_pixserver";
 			try {
 				const styleResponse = await axios.get(pythonStyleApi);
 				const styles = styleResponse.data.style_name;
@@ -122,7 +122,7 @@ module.exports = {
 			return api.sendMessage("❌ Invalid style number.", event.threadID, event.messageID);
 		}
 
-		const pythonStyleApi = "https://test-flask-yl8n.onrender.com/style_pixserver";
+		const pythonStyleApi = "https://pixverser.smfahim.xyz/style_pixserver";
 		const styleResponse = await axios.get(pythonStyleApi);
 		const styles = styleResponse.data.style_name;
 		if (!styles || styles.length === 0 || styNumber > styles.length) {
@@ -147,7 +147,7 @@ module.exports = {
 		await downloadImage(imageUrl, imageSavePath);
 
 		// Call pixserver API
-		const imagePixserverUrl = "https://test-flask-yl8n.onrender.com/image_pixserver";
+		const imagePixserverUrl = "https://pixverser.smfahim.xyz/image_pixserver";
 		const pixserverResponse = await axios.get(imagePixserverUrl, {
 			params: { file: imageUrl, style: styNumber }
 		});
