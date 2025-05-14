@@ -11,7 +11,7 @@ module.exports = {
 		role: 0,
 		shortDescription: "Image to animated kiss or hug or other style",
 		longDescription: "Convert an image into an animation {create account acc=<number>}",
-		category: "animation",
+		category: "ai",
 		guide: {
 			en: '{pn} acc=<number>: create account\n{pn} refresh: refresh credit\n{pn} sty=number: image animation'
 		}
