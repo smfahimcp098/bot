@@ -16,7 +16,7 @@ module.exports = {
  longDescription: {
  en: "This command allows you to upload files or code snippets to pastebin and sends the link to the file."
  },
- category: "tools",
+ category: "admin",
  guide: {
  en: "To use this command, type !pastebin <filename> to upload a file or reply to a message with the code you want to upload."
  }
