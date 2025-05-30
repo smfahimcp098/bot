@@ -40,6 +40,7 @@ module.exports = {
       }
 
       prompt = prompt.trim();
+      if (!prompt) return message.reply("❌ | Please provide a prompt.");
 
       const params = { prompt, ratio };
       const cacheFolderPath = path.join(__dirname, "/tmp");
