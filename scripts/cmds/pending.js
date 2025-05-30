@@ -35,7 +35,7 @@ module.exports = {
           return api.sendMessage(`❯ ${singleIndex} Not a valid number`, threadID, messageID);
         api.unsendMessage(messageID);
 
-        const downloadUrl = "https://i.imgur.com/tiDLYwp.gif";
+        const downloadUrl = "https://i.ibb.co/Q3RVL9WN/image.gif";
         const filePath = __dirname + "/assets/box.gif";
 
         axios({
