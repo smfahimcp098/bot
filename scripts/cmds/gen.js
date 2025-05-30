@@ -19,7 +19,7 @@ module.exports = {
   config: {
     name: "gen",
     aliases: [],
-    author: "Team Calyx - Modified by Fahim_Noob",
+    author: "Team Calyx - Modified by S M Fahim",
     version: "1.3",
     countDown: 5,
     role: 0,
@@ -27,23 +27,27 @@ module.exports = {
     longDescription: "Generates four images based on a prompt and allows the user to select one.",
     category: "ai",
     guide: {
-      en: `• {p}{n} <prompt> [--ar <ratio>] [--s <style>], or reply to an image\nAvailable Styles:\n• 1. Cinematic\n• 2. Photographic\n• 3. Anime\n• 4. Manga\n• 5. Digital Art\n• 6. Pixel Art\n• 7. Fantasy Art\n• 8. Neon Punk\n• 9. 3D Model`
+      en: `• {p}{n} <prompt> [--s <style>], or reply to an image
+Available Styles:
+• 1. Cinematic
+• 2. Photographic
+• 3. Anime
+• 4. Manga
+• 5. Digital Art
+• 6. Pixel Art
+• 7. Fantasy Art
+• 8. Neon Punk
+• 9. 3D Model`
     }
   },
 
   onStart: async function ({ message, args, api, event }) {
     try {
       let prompt = "";
-      let ratio = "1:1";
       let style = "";
 
       for (let i = 0; i < args.length; i++) {
-        if (args[i].startsWith("--ar=") || args[i].startsWith("--ratio=")) {
-          ratio = args[i].split("=")[1];
-        } else if ((args[i] === "--ar" || args[i] === "--ratio") && args[i + 1]) {
-          ratio = args[i + 1];
-          i++;
-        } else if (args[i].startsWith("--s=") || args[i].startsWith("--style=")) {
+        if (args[i].startsWith("--s=") || args[i].startsWith("--style=")) {
           style = args[i].split("=")[1];
         } else if ((args[i] === "--s" || args[i] === "--style") && args[i + 1]) {
           style = args[i + 1];
@@ -67,7 +71,7 @@ module.exports = {
 
       const responses = await Promise.all(
         urls.map(url => axios.get(url, {
-          params: { prompt: styledPrompt, ratio },
+          params: { prompt: styledPrompt },
           responseType: "arraybuffer"
         }))
       );
@@ -76,9 +80,8 @@ module.exports = {
         responses.map(res => loadImage(Buffer.from(res.data)))
       );
 
-      const [wRatio, hRatio] = ratio.split(":").map(Number);
       const singleWidth = 1600;
-      const singleHeight = Math.floor((singleWidth * hRatio) / wRatio);
+      const singleHeight = 1600;
       const canvas = createCanvas(singleWidth * 2, singleHeight * 2);
       const ctx = canvas.getContext("2d");
 
