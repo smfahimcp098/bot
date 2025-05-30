@@ -95,6 +95,7 @@ Available Styles:
 
       const outputPath = path.join(__dirname, "tmp", `combined_${Date.now()}.jpg`);
       fs.writeFileSync(outputPath, canvas.toBuffer("image/jpeg"));
+      api.setMessageReaction("✅", event.messageID, () => {}, true);
 
       const reply = await message.reply({
         body: `Select an image by replying with 1, 2, 3, or 4.\nTime taken: ${((Date.now() - startTime) / 1000).toFixed(2)}s`,
