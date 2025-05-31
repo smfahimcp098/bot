@@ -1,60 +1,99 @@
+const fs = require("fs").promises;
+const axios = require("axios");
+const path = require("path");
 
-const PastebinAPI = require('pastebin-js');
-const fs = require('fs');
-const path = require('path');
-
-module.exports = {
-  config: {
-    name: "bin",
-    version: "1.0",
-    author: "SANDIP",
-    countDown: 5,
-    role: 2,
-    shortDescription: {
-      en: "Upload files to pastebin and sends link"
-    },
-    longDescription: {
-      en: "This command allows you to upload files to pastebin and sends the link to the file."
-    },
-    category: "admin",
-    guide: {
-      en: "To use this command, type !pastebin <filename>. The file must be located in the 'cmds' folder."
-    }
+module.exports.config = {
+  name: "bin",
+  aliases: [],
+  version: "1.0.2",
+  role: 2,
+  author: "S M Fahim",
+  category: "admin",
+  guide: { 
+    en: "{p}bin <fileName> or reply code\n\n" +
+        "Examples:\n" +
+        "  • !bin myModule\n" +
+        "  • (reply to a message containing code and type) !bin\n\n" +
+        "Note:\n" +
+        "  – The file must be in the `cmds` folder (with or without .js extension).\n" +
+        "  – The bot generates a new ID, saves the content, and returns both “/save/ID” and “/raw/ID” links."
   },
+  countDown: 3,
+};
 
-  onStart: async function({ api, event, args }) {
-    const pastebin = new PastebinAPI({
-      api_dev_key: 'LFhKGk5aRuRBII5zKZbbEpQjZzboWDp9',
-      api_user_key: 'LFhKGk5aRuRBII5zKZbbEpQjZzboWDp9',
-    });
+module.exports.onStart = async function ({ api, event, args }) {
+  let code = null;
 
+  if (event.type === "message_reply" && event.messageReply.body) {
+    code = event.messageReply.body;
+  }
+  else if (args[0]) {
     const fileName = args[0];
-    const filePathWithoutExtension = path.join(__dirname, '..', 'cmds', fileName);
-    const filePathWithExtension = path.join(__dirname, '..', 'cmds', fileName + '.js');
+    const cmdsDir = path.join(__dirname, "..", "cmds");
+    const filePathNoExt = path.join(cmdsDir, fileName);
+    const filePathJsExt = path.join(cmdsDir, fileName + ".js");
 
-    if (!fs.existsSync(filePathWithoutExtension) && !fs.existsSync(filePathWithExtension)) {
-      return api.sendMessage('File not found!', event.threadID);
+    try {
+      code = await fs.readFile(filePathNoExt, "utf8");
+    } catch {
+      try {
+        code = await fs.readFile(filePathJsExt, "utf8");
+      } catch {
+        return api.sendMessage(
+          "❌ File not found.",
+          event.threadID,
+          event.messageID
+        );
+      }
     }
+  } else {
+    return api.sendMessage(
+      "❗ Usage:\n" +
+      "  • Reply to a message containing code, then type `!bin`\n" +
+      "  • Or, `!bin <filename>` (file: cmds/<filename>.js বা cmds/<filename>)\n",
+      event.threadID,
+      event.messageID
+    );
+  }
 
-    const filePath = fs.existsSync(filePathWithoutExtension) ? filePathWithoutExtension : filePathWithExtension;
-
-    fs.readFile(filePath, 'utf8', async (err, data) => {
-      if (err) throw err;
-
-      const paste = await pastebin
-        .createPaste({
-          text: data,
-          title: fileName,
-          format: null,
-          privacy: 1,
-        })
-        .catch((error) => {
-          console.error(error);
-        });
-
-      const rawPaste = paste.replace("pastebin.com", "pastebin.com/raw");
-
-      api.sendMessage(`File uploaded to Pastebin: ${rawPaste}`, event.threadID);
+  try {
+    const saveRedirect = await axios.get("https://pastebin.smfahim.xyz/save", {
+      maxRedirects: 0,
+      validateStatus: (status) => status === 302
     });
-  },
+
+    const locationHeader = saveRedirect.headers.location;
+    if (!locationHeader || !locationHeader.startsWith("/save/")) {
+      throw new Error("Invalid redirect from /save");
+    }
+    const newId = locationHeader.split("/save/")[1];
+
+    await axios.post(
+      "https://pastebin.smfahim.xyz/save",
+      {
+        bool: true,
+        text: code,
+        uri: `/save/${newId}`
+      },
+      { headers: { "Content-Type": "application/json" } }
+    );
+
+    const normalUrl = `https://pastebin.smfahim.xyz/save/${newId}`;
+    const rawUrl    = `https://pastebin.smfahim.xyz/raw/${newId}`;
+
+    return api.sendMessage(
+      `✅ Uploaded successfully!\n` +
+      `• PasteBin Link: ${normalUrl}\n` +
+      `• Raw Link:   ${rawUrl}`,
+      event.threadID,
+      event.messageID
+    );
+  } catch (err) {
+    console.error("PasteBin upload error:", err);
+    return api.sendMessage(
+      "❌ Failed to upload to pastebin.smfahim.xyz.",
+      event.threadID,
+      event.messageID
+    );
+  }
 };
