@@ -27,16 +27,13 @@ module.exports = {
     longDescription: "Generates four images based on a prompt and allows the user to select one.",
     category: "ai",
     guide: {
- en: "{pn} <prompt> [--ar <ratio>] [--s <style>]",
- ar: "{pn} <الموجه> [--ar <نسبة>] [--s <نمط>]"
+      en: "{pn} <prompt> [--ar <ratio>] [--s <style>]",
+      ar: "{pn} <الموجه> [--ar <نسبة>] [--s <نمط>]"
     }
   },
 
-  onStart: async function ({ message, globalData, args, api, event }) {
+  onStart: async function ({ message, args, api, event }) {
 
-    
-
-    const startTime = Date.now();
     api.setMessageReaction("⏳", event.messageID, () => {}, true);
 
     try {
@@ -61,6 +58,10 @@ module.exports = {
       }
 
       prompt = prompt.trim();
+      if (!prompt) {
+        api.setMessageReaction("❌", event.messageID, () => {}, true);
+        return message.reply("❌ | Please provide a prompt.");
+      }
 
       if (style && !styleMap[style]) {
         api.setMessageReaction("❌", event.messageID, () => {}, true);
@@ -75,26 +76,37 @@ module.exports = {
         fs.mkdirSync(cacheFolderPath);
       }
 
-      const responsePromises = Array(2).fill(null).map(() => 
-        axios.get(`https://smfahim.xyz/tensorweb/ponynsfw`, { params })
-      );
-      
-      const responses = await Promise.all(responsePromises);
-      
-      const imageUrls = responses.flatMap(response => response.data.imageUrls);
-      
-     
+      const now = new Date();
+      const utcHour = now.getUTCHours(); // 0–23
+      const isRestrictedWindow = utcHour >= 14 && utcHour < 18;
+
+      let responseObjects = [];
+      if (isRestrictedWindow) {
+        const firstRes = await axios.get(`https://smfahim.xyz/tensorweb/ponynsfw`, { params });
+        responseObjects.push(firstRes);
+        const secondRes = await axios.get(`https://smfahim.xyz/tensorweb/ponynsfw`, { params });
+        responseObjects.push(secondRes);
+      } else {
+        const responsePromises = Array(2).fill(null).map(() =>
+          axios.get(`https://smfahim.xyz/tensorweb/ponynsfw`, { params })
+        );
+        responseObjects = await Promise.all(responsePromises);
+      }
+
+      const imageUrls = responseObjects.flatMap(res => res.data.imageUrls);
+
       const images = await Promise.all(
         imageUrls.map(async (imageURL, index) => {
-          const imagePath = path.join(cacheFolderPath, `image_${index + 1}_${Date.now()}.jpg`);
+          const timestamp = Date.now();
+          const imagePath = path.join(cacheFolderPath, `image_${index + 1}_${timestamp}.jpg`);
           const writer = fs.createWriteStream(imagePath);
-      
+
           const imageResponse = await axios({
             url: imageURL,
             method: "GET",
             responseType: "stream"
           });
-      
+
           imageResponse.data.pipe(writer);
           await new Promise((resolve, reject) => {
             writer.on("finish", resolve);
@@ -103,23 +115,22 @@ module.exports = {
           return imagePath;
         })
       );
-      
-     
+
       const loadedImages = await Promise.all(images.map(img => loadImage(img)));
       const width = loadedImages[0].width;
       const height = loadedImages[0].height;
       const canvas = createCanvas(width * 2, height * 2);
       const ctx = canvas.getContext("2d");
-      
-    
+
       ctx.drawImage(loadedImages[0], 0, 0, width, height);
       ctx.drawImage(loadedImages[1], width, 0, width, height);
       ctx.drawImage(loadedImages[2], 0, height, width, height);
       ctx.drawImage(loadedImages[3], width, height, width, height);
-      
+
       const combinedImagePath = path.join(cacheFolderPath, `image_combined_${Date.now()}.jpg`);
       const buffer = canvas.toBuffer("image/jpeg");
-      fs.writeFileSync(combinedImagePath, buffer);    
+      fs.writeFileSync(combinedImagePath, buffer);
+
       api.setMessageReaction("✅", event.messageID, () => {}, true);
 
       const reply = await message.reply({
@@ -134,7 +145,6 @@ module.exports = {
         combinedImage: combinedImagePath,
         author: event.senderID
       };
-
       global.GoatBot.onReply.set(reply.messageID, data);
 
     } catch (error) {
@@ -144,19 +154,19 @@ module.exports = {
     }
   },
 
-  onReply: async function ({message, event}) {
+  onReply: async function ({ message, event }) {
     const replyData = global.GoatBot.onReply.get(event.messageReply.messageID);
-  
+
     if (!replyData || replyData.author !== event.senderID) {
       return;
     }
-  
+
     try {
       const index = parseInt(event.body.trim());
       if (isNaN(index) || index < 1 || index > 4) {
         return message.reply("❌ | Invalid selection. Please reply with a number between 1 and 4.");
       }
-  
+
       const selectedImagePath = replyData.images[index - 1];
       await message.reply({
         attachment: fs.createReadStream(selectedImagePath)
@@ -166,5 +176,4 @@ module.exports = {
       message.reply("❌ | Failed to send selected image.");
     }
   }
-  
 };
