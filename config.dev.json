@@ -21,7 +21,7 @@
   "adminBot": [
     "100004768956931",
     "100014657416389",
-    ""
+    "61566869935363"
   ],
   "whiteListMode": {
     "enable": false,
@@ -32,7 +32,11 @@
   },
   "whiteListModeThread": {
     "enable": true,
-    "whiteListThreadIds": ["10100087963345610"],
+    "whiteListThreadIds": [
+      "10100087963345610",
+      "25932607893050441",
+      "5976683912353209"
+    ],
     "notes": "if you enable this feature, only the thread in the whiteListThreadIds list can use the bot",
     "how_it_work": "if you enable both whiteListMode and whiteListModeThread, the system will check if the user is in whiteListIds, then check if the thread is in whiteListThreadIds, if one of the conditions is true, the user can use the bot"
   },
