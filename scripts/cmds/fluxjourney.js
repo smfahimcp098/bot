@@ -33,7 +33,6 @@ module.exports = {
   },
 
   onStart: async function ({ message, args, api, event }) {
-
     api.setMessageReaction("⏳", event.messageID, () => {}, true);
 
     try {
@@ -41,6 +40,7 @@ module.exports = {
       let ratio = "1:1";
       let style = "";
 
+      // Parse arguments for prompt, ratio, and style
       for (let i = 0; i < args.length; i++) {
         if (args[i].startsWith("--ar=") || args[i].startsWith("--ratio=")) {
           ratio = args[i].split("=")[1];
@@ -68,33 +68,49 @@ module.exports = {
         return message.reply(`❌ | Invalid style: ${style}. Please provide a valid style number (1-9).`);
       }
 
+      // Construct the styled prompt
       const styledPrompt = `${prompt}, ${styleMap[style] || ""}`.trim();
       const params = { prompt: styledPrompt, ratio };
       const cacheFolderPath = path.join(__dirname, "/tmp");
 
+      // Ensure cache folder exists
       if (!fs.existsSync(cacheFolderPath)) {
         fs.mkdirSync(cacheFolderPath);
       }
 
+      // Determine if we're in the restricted UTC window (14:00–18:00 UTC)
       const now = new Date();
-      const utcHour = now.getUTCHours(); 
+      const utcHour = now.getUTCHours();
       const isRestrictedWindow = utcHour >= 14 && utcHour < 18;
 
       let responseObjects = [];
+
       if (isRestrictedWindow) {
+        // Sequential requests during restricted window
         const firstRes = await axios.get(`https://smfahim.xyz/tensorweb/fluxjourney`, { params });
         responseObjects.push(firstRes);
+
+        // Wait 5 seconds before sending the second request
+        await new Promise(resolve => setTimeout(resolve, 5000));
+
         const secondRes = await axios.get(`https://smfahim.xyz/tensorweb/fluxjourney`, { params });
         responseObjects.push(secondRes);
       } else {
-        const responsePromises = Array(2).fill(null).map(() =>
-          axios.get(`https://smfahim.xyz/tensorweb/fluxjourney`, { params })
-        );
-        responseObjects = await Promise.all(responsePromises);
+        // Outside restricted window, also do sequential with delay to prevent errors
+        const firstRes = await axios.get(`https://smfahim.xyz/tensorweb/fluxjourney`, { params });
+        responseObjects.push(firstRes);
+
+        // Wait 5 seconds before sending the second request
+        await new Promise(resolve => setTimeout(resolve, 5000));
+
+        const secondRes = await axios.get(`https://smfahim.xyz/tensorweb/fluxjourney`, { params });
+        responseObjects.push(secondRes);
       }
 
+      // Combine image URLs from both responses
       const imageUrls = responseObjects.flatMap(res => res.data.imageUrls);
 
+      // Download each image to a temporary file
       const images = await Promise.all(
         imageUrls.map(async (imageURL, index) => {
           const timestamp = Date.now();
@@ -116,6 +132,7 @@ module.exports = {
         })
       );
 
+      // Load images onto a 2x2 canvas
       const loadedImages = await Promise.all(images.map(img => loadImage(img)));
       const width = loadedImages[0].width;
       const height = loadedImages[0].height;
@@ -127,17 +144,20 @@ module.exports = {
       ctx.drawImage(loadedImages[2], 0, height, width, height);
       ctx.drawImage(loadedImages[3], width, height, width, height);
 
+      // Save combined image
       const combinedImagePath = path.join(cacheFolderPath, `image_combined_${Date.now()}.jpg`);
       const buffer = canvas.toBuffer("image/jpeg");
       fs.writeFileSync(combinedImagePath, buffer);
 
       api.setMessageReaction("✅", event.messageID, () => {}, true);
 
+      // Send the combined image and prompt user to select one
       const reply = await message.reply({
         body: `Select an image by responding with 1, 2, 3, or 4.`,
         attachment: fs.createReadStream(combinedImagePath)
       });
 
+      // Store data for onReply handler
       const data = {
         commandName: this.config.name,
         messageID: reply.messageID,
