@@ -3,16 +3,21 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "o1",
-    version: "1.3",
+    version: "1.4",
     author: "Team Calyx",
     countDown: 10,
     role: 0,
     longDescription: {
-      en: "Generate Ghibli-style images. Supports reply-image, --count/--n, --ar and --fahim."
+      en: "Generate Ghibli-style images. Supports reply-image, --count/--n, --ar, --fahim, and --custom <url>."
     },
     category: "image",
     guide: {
-      en: "{pn} <prompt> [--count N | --n N] [--ar ratio] [--fahim]\n\nExamples:\n• {pn} sunset --count 3 --ar 2:3\n• {pn} a cute girl --fahim"
+      en: `{pn} <prompt> [--count N | --n N] [--ar ratio] [--fahim] [--custom <image_url>]
+
+Examples:
+• {pn} sunset --count 3 --ar 2:3
+• {pn} a cute girl --fahim
+• {pn} landscape --custom https://example.com/image.jpg`
     }
   },
 
@@ -22,36 +27,43 @@ module.exports = {
     let count = 1;
     let ratio = "1:1";
     let useFahimImage = false;
+    let customImageUrl = null;
     const promptParts = [];
 
     for (let i = 0; i < args.length; i++) {
-      if (["--count", "--n"].includes(args[i]) && args[i + 1]) {
-        const num = parseInt(args[++i], 10);
+      const arg = args[i];
+      if ((arg === "--count" || arg === "--n") && args[i + 1]) {
+        const num = parseInt(args[++i]);
         if (num >= 1 && num <= 4) count = num;
-        else return message.reply("⚠️ --count/--n must be 1–4.");
-      }
-      else if (args[i] === "--ar" && args[i + 1]) {
+        else return message.reply("⚠️ --count/--n must be between 1 and 4.");
+      } else if (arg === "--ar" && args[i + 1]) {
         const r = args[++i];
-        if (["1:1","2:3","3:2"].includes(r)) ratio = r;
+        if (["1:1", "2:3", "3:2"].includes(r)) ratio = r;
         else return message.reply("⚠️ --ar must be 1:1, 2:3 or 3:2.");
-      }
-      else if (args[i] === "--fahim") {
+      } else if (arg === "--fahim") {
         useFahimImage = true;
+      } else if (arg === "--custom") {
+        if (!args[i + 1] || args[i + 1].startsWith("--")) {
+          return message.reply("⚠️ Please provide a valid image URL after `--custom`.");
+        }
+        customImageUrl = args[++i];
+      } else {
+        promptParts.push(arg);
       }
-      else promptParts.push(args[i]);
     }
 
-    const promptText = promptParts.join(" ");
-    const encodedPrompt = encodeURIComponent(promptText);
-    let url = `https://smfahim.xyz/gpt1image-ghibli?prompt=${encodedPrompt}&n=${count}&ratio=${ratio}`;
+    const promptText = promptParts.join(" ").trim();
+    if (!promptText) return message.reply("⚠️ Please provide a valid prompt.");
 
-    // Image logic
-    if (useFahimImage) {
-      const encodedImg = encodeURIComponent("https://i.postimg.cc/05DL1m2G/1747404143337.jpg");
-      url += `&imageUrl=${encodedImg}`;
+    let url = `https://smfahim.xyz/gpt1image-ghibli?prompt=${encodeURIComponent(promptText)}&n=${count}&ratio=${ratio}`;
+
+    // Set image URL
+    if (customImageUrl) {
+      url += `&imageUrl=${encodeURIComponent(customImageUrl)}`;
+    } else if (useFahimImage) {
+      url += `&imageUrl=${encodeURIComponent("https://i.ibb.co/LBgLgK7/1747404905394.jpg")}`;
     } else if (event.messageReply?.attachments?.[0]?.url) {
-      const encodedImg = encodeURIComponent(event.messageReply.attachments[0].url);
-      url += `&imageUrl=${encodedImg}`;
+      url += `&imageUrl=${encodeURIComponent(event.messageReply.attachments[0].url)}`;
     }
 
     api.setMessageReaction("⏳", event.messageID, () => {}, true);
@@ -61,7 +73,7 @@ module.exports = {
       const images = res.data.data;
 
       if (!Array.isArray(images) || images.length === 0) {
-        await message.reply("❌ No images returned.");
+        await message.reply("❌ No image returned from the API.");
         return api.setMessageReaction("❌", event.messageID, () => {}, true);
       }
 
@@ -77,7 +89,7 @@ module.exports = {
       api.setMessageReaction("✅", event.messageID, () => {}, true);
     } catch (err) {
       console.error("o1 error:", err);
-      await message.reply("❌ Failed to generate image.");
+      await message.reply("❌ Failed to generate image. Try again later.");
       api.setMessageReaction("❌", event.messageID, () => {}, true);
     }
   }
