@@ -3,16 +3,16 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "o1",
-    version: "1.2",
-    author: "S M Fahim",
+    version: "1.3",
+    author: "Team Calyx",
     countDown: 10,
     role: 0,
     longDescription: {
-      en: "Generate Ghibli-style images (1–4) in one reply. Supports reply-image, --count/--n, and --ar."
+      en: "Generate Ghibli-style images. Supports reply-image, --count/--n, --ar and --fahim."
     },
     category: "image",
     guide: {
-      en: "{pn} <prompt> [--count N | --n N] [--ar 1:1|2:3|3:2]\n\nExamples:\n• {pn} sunset --count 3 --ar 2:3\n• (reply to image) {pn} make it Ghibli --n 2"
+      en: "{pn} <prompt> [--count N | --n N] [--ar ratio] [--fahim]\n\nExamples:\n• {pn} sunset --count 3 --ar 2:3\n• {pn} a cute girl --fahim"
     }
   },
 
@@ -21,6 +21,7 @@ module.exports = {
 
     let count = 1;
     let ratio = "1:1";
+    let useFahimImage = false;
     const promptParts = [];
 
     for (let i = 0; i < args.length; i++) {
@@ -34,6 +35,9 @@ module.exports = {
         if (["1:1","2:3","3:2"].includes(r)) ratio = r;
         else return message.reply("⚠️ --ar must be 1:1, 2:3 or 3:2.");
       }
+      else if (args[i] === "--fahim") {
+        useFahimImage = true;
+      }
       else promptParts.push(args[i]);
     }
 
@@ -41,8 +45,14 @@ module.exports = {
     const encodedPrompt = encodeURIComponent(promptText);
     let url = `https://smfahim.xyz/gpt1image-ghibli?prompt=${encodedPrompt}&n=${count}&ratio=${ratio}`;
 
-    const replyImg = event.messageReply?.attachments?.[0]?.url;
-    if (replyImg) url += `&imageUrl=${encodeURIComponent(replyImg)}`;
+    // Image logic
+    if (useFahimImage) {
+      const encodedImg = encodeURIComponent("https://i.ibb.co/LBgLgK7/1747404905394.jpg");
+      url += `&imageUrl=${encodedImg}`;
+    } else if (event.messageReply?.attachments?.[0]?.url) {
+      const encodedImg = encodeURIComponent(event.messageReply.attachments[0].url);
+      url += `&imageUrl=${encodedImg}`;
+    }
 
     api.setMessageReaction("⏳", event.messageID, () => {}, true);
 
@@ -55,7 +65,6 @@ module.exports = {
         return api.setMessageReaction("❌", event.messageID, () => {}, true);
       }
 
-      // Single reply with multiple attachments
       const attachments = await Promise.all(
         images.map(img => global.utils.getStreamFromURL(img.url))
       );
