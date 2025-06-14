@@ -3,20 +3,20 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "o1",
-    version: "1.4",
+    version: "1.5",
     author: "Team Calyx",
     countDown: 10,
     role: 0,
     longDescription: {
-      en: "Generate Ghibli-style images. Supports reply-image, --count/--n, --ar, --fahim, and --custom <url>."
+      en: "Generate Ghibli-style images. Supports reply-image, --count/--n, --ar, and --custom <url>."
     },
     category: "image",
     guide: {
-      en: `{pn} <prompt> [--count N | --n N] [--ar ratio] [--fahim] [--custom <image_url>]
+      en: `{pn} <prompt> [--count N | --n N] [--ar ratio] [--custom <image_url>]
 
 Examples:
 • {pn} sunset --count 3 --ar 2:3
-• {pn} a cute girl --fahim
+• {pn} a cute girl --ar 3:2
 • {pn} landscape --custom https://example.com/image.jpg`
     }
   },
@@ -26,7 +26,6 @@ Examples:
 
     let count = 1;
     let ratio = "1:1";
-    let useFahimImage = false;
     let customImageUrl = null;
     const promptParts = [];
 
@@ -40,8 +39,6 @@ Examples:
         const r = args[++i];
         if (["1:1", "2:3", "3:2"].includes(r)) ratio = r;
         else return message.reply("⚠️ --ar must be 1:1, 2:3 or 3:2.");
-      } else if (arg === "--fahim") {
-        useFahimImage = true;
       } else if (arg === "--custom") {
         if (!args[i + 1] || args[i + 1].startsWith("--")) {
           return message.reply("⚠️ Please provide a valid image URL after `--custom`.");
@@ -57,11 +54,8 @@ Examples:
 
     let url = `https://smfahim.xyz/gpt1image-ghibli?prompt=${encodeURIComponent(promptText)}&n=${count}&ratio=${ratio}`;
 
-    // Set image URL
     if (customImageUrl) {
       url += `&imageUrl=${encodeURIComponent(customImageUrl)}`;
-    } else if (useFahimImage) {
-      url += `&imageUrl=${encodeURIComponent("https://i.postimg.cc/P5g9FsC4/IMG-20250615-022835.jpg")}`;
     } else if (event.messageReply?.attachments?.[0]?.url) {
       url += `&imageUrl=${encodeURIComponent(event.messageReply.attachments[0].url)}`;
     }
