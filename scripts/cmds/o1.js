@@ -4,32 +4,43 @@ module.exports = {
   config: {
     name: "o1",
     aliases: [],
-    version: "1.0",
-    author: "Team Calyx",
+    version: "1.1",
+    author: "Team Calyx & Fahim",
     countDown: 10,
     role: 0,
     longDescription: {
-      en: "Generate a Ghibli-style image. If you reply to a message containing an image, that image URL will be sent as `imageUrl` to the API."
+      en: "Generate a Ghibli-style image. Use `--ar 2:3` for ratio. If you reply to an image, it will use that image."
     },
     category: "image",
     guide: {
-      en: "{pn} <prompt>\n\n• To use your own image: reply to a message with an image, then run:\n  {pn} your prompt here\n\n• If no reply‐image, it will send only the text prompt."
+      en: "{pn} <prompt>\n\n• Optional: Add `--ar 2:3` or `--ar 3:2`\n• Reply to an image to style it with prompt."
     }
   },
 
   onStart: async function ({ message, api, args, event }) {
-    const promptText = args.join(" ").trim();
-    if (!promptText) {
+    if (!args.length) {
       return message.reply(
         `⚠️ Please provide a text prompt.\n\nExample:\n${global.GoatBot.config.prefix}o1 a cat\n\nOr reply to an image with:\n${global.GoatBot.config.prefix}o1 describe this scene`
       );
     }
 
-    // 기본 promptPayload 설정
-    let apiUrl = "";
-    const encodedPrompt = encodeURIComponent(promptText);
+    // Handle --ar (aspect ratio)
+    let ratio = "1:1"; // default
+    const arIndex = args.findIndex(arg => arg === "--ar");
+    if (arIndex !== -1 && args[arIndex + 1]) {
+      const inputRatio = args[arIndex + 1];
+      if (["1:1", "2:3", "3:2"].includes(inputRatio)) {
+        ratio = inputRatio;
+        args.splice(arIndex, 2); // remove --ar and value from args
+      } else {
+        return message.reply("⚠️ Allowed aspect ratios: 1:1, 2:3, 3:2");
+      }
+    }
 
-    // 만약 리플라이한 메시지에 이미지가 있으면 imageUrl 파라미터 추가
+    const promptText = args.join(" ").trim();
+    const encodedPrompt = encodeURIComponent(promptText);
+    let apiUrl = "";
+
     if (
       event.messageReply &&
       event.messageReply.attachments &&
@@ -38,37 +49,32 @@ module.exports = {
     ) {
       const rawImgUrl = event.messageReply.attachments[0].url;
       const encodedImg = encodeURIComponent(rawImgUrl);
-      apiUrl = `https://smfahim.xyz/gpt1image-ghibli?prompt=${encodedPrompt}&imageUrl=${encodedImg}`;
+      apiUrl = `https://smfahim.xyz/gpt1image-ghibli?prompt=${encodedPrompt}&imageUrl=${encodedImg}&ratio=${ratio}&count=1`;
     } else {
-      apiUrl = `https://smfahim.xyz/gpt1image-ghibli?prompt=${encodedPrompt}`;
+      apiUrl = `https://smfahim.xyz/gpt1image-ghibli?prompt=${encodedPrompt}&size=${ratio}&n=1&enhance=false&format=b64_json&count=1`;
     }
 
-    // 로딩 리액션
     api.setMessageReaction("⏳", event.messageID, () => {}, true);
 
     try {
-      // API에서 JSON 배열 형태로 응답 받음: [ { "url": "https://..." } ]
       const res = await axios.get(apiUrl);
       const data = res.data;
 
-      if (Array.isArray(data) && data[0] && data[0].url) {
-        const imageUrl = data[0].url;
+      if (Array.isArray(data) && data[0] && (data[0].url || data[0].b64_json)) {
+        const imageUrl = data[0].url || `data:image/png;base64,${data[0].b64_json}`;
         const imageStream = await global.utils.getStreamFromURL(imageUrl);
 
-        // "Generating please wait" 메시지를 일단 보내고, 이미지가 준비되면 바꾸기
         message.reply("✅ Generation complete. Sending image...", async (err, info) => {
           await message.reply({
             body: `🖼 Prompt: "${promptText}"`,
             attachment: imageStream
           });
-          // 첫 번째 "Generating please wait" 메시지 삭제
           message.unsend(info.messageID);
         });
 
-        // 성공 리액션
         api.setMessageReaction("✅", event.messageID, () => {}, true);
       } else {
-        await message.reply("❌ Failed to get image URL from API.");
+        await message.reply("❌ Failed to receive image data from API.");
         api.setMessageReaction("❌", event.messageID, () => {}, true);
       }
     } catch (err) {
