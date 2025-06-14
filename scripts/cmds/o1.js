@@ -61,7 +61,7 @@ Examples:
     if (customImageUrl) {
       url += `&imageUrl=${encodeURIComponent(customImageUrl)}`;
     } else if (useFahimImage) {
-      url += `&imageUrl=${encodeURIComponent("https://i.ibb.co/LBgLgK7/1747404905394.jpg")}`;
+      url += `&imageUrl=${encodeURIComponent("https://i.postimg.cc/P5g9FsC4/IMG-20250615-022835.jpg")}`;
     } else if (event.messageReply?.attachments?.[0]?.url) {
       url += `&imageUrl=${encodeURIComponent(event.messageReply.attachments[0].url)}`;
     }
