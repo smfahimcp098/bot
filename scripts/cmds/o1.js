@@ -32,7 +32,7 @@ Examples:
     const promptParts = [];
 
     // Default fahim image URL
-    const fahimDefaultUrl = "https://i.ibb.co/Y4DkqvQy/19770aa373b.jpg";
+    const fahimDefaultUrl = "https://i.ibb.co/1GSPpPX8/19770c55fba.jpg";
 
     // Parse arguments
     for (let i = 0; i < args.length; i++) {
