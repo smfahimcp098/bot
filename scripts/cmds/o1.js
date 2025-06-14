@@ -47,7 +47,7 @@ module.exports = {
 
     // Image logic
     if (useFahimImage) {
-      const encodedImg = encodeURIComponent("https://i.ibb.co/LBgLgK7/1747404905394.jpg");
+      const encodedImg = encodeURIComponent("https://i.postimg.cc/05DL1m2G/1747404143337.jpg");
       url += `&imageUrl=${encodedImg}`;
     } else if (event.messageReply?.attachments?.[0]?.url) {
       const encodedImg = encodeURIComponent(event.messageReply.attachments[0].url);
