@@ -5,53 +5,52 @@ module.exports = {
     name: "o1",
     aliases: [],
     version: "1.1",
-    author: "Team Calyx & Fahim",
+    author: "Team Calyx",
     countDown: 10,
     role: 0,
     longDescription: {
-      en: "Generate a Ghibli-style image. Use `--ar 2:3` for ratio. If you reply to an image, it will use that image."
+      en: "Generate a Ghibli-style image. Supports image reply and optional parameters like --count/n and --ar."
     },
     category: "image",
     guide: {
-      en: "{pn} <prompt>\n\n• Optional: Add `--ar 2:3` or `--ar 3:2`\n• Reply to an image to style it with prompt."
+      en: "{pn} <prompt>\n\n• Reply to an image for custom input.\n• Add --count or --n (1-4) to get multiple images.\n• Add --ar 2:3 or 3:2 to change aspect ratio.\n\nExamples:\n- {pn} a cat\n- {pn} a cat --count 3 --ar 2:3\n- (reply to image) {pn} make it ghibli style --n 2"
     }
   },
 
   onStart: async function ({ message, api, args, event }) {
-    if (!args.length) {
-      return message.reply(
-        `⚠️ Please provide a text prompt.\n\nExample:\n${global.GoatBot.config.prefix}o1 a cat\n\nOr reply to an image with:\n${global.GoatBot.config.prefix}o1 describe this scene`
-      );
-    }
+    if (!args[0]) return message.reply(`⚠️ Please provide a prompt.`);
 
-    // Handle --ar (aspect ratio)
-    let ratio = "1:1"; // default
-    const arIndex = args.findIndex(arg => arg === "--ar");
-    if (arIndex !== -1 && args[arIndex + 1]) {
-      const inputRatio = args[arIndex + 1];
-      if (["1:1", "2:3", "3:2"].includes(inputRatio)) {
-        ratio = inputRatio;
-        args.splice(arIndex, 2); // remove --ar and value from args
+    // Extract --count or --n and --ar from args
+    let count = 1;
+    let ratio = "1:1";
+
+    const promptParts = [];
+    for (let i = 0; i < args.length; i++) {
+      if (["--count", "--n"].includes(args[i]) && args[i + 1]) {
+        const parsed = parseInt(args[i + 1]);
+        if (parsed >= 1 && parsed <= 4) count = parsed;
+        i++;
+      } else if (args[i] === "--ar" && args[i + 1]) {
+        ratio = args[i + 1];
+        i++;
       } else {
-        return message.reply("⚠️ Allowed aspect ratios: 1:1, 2:3, 3:2");
+        promptParts.push(args[i]);
       }
     }
 
-    const promptText = args.join(" ").trim();
+    const promptText = promptParts.join(" ");
     const encodedPrompt = encodeURIComponent(promptText);
-    let apiUrl = "";
+    let apiUrl = `https://smfahim.xyz/gpt1image-ghibli?prompt=${encodedPrompt}&n=${count}&ratio=${ratio}`;
 
+    // Check if replying to a message with an image
     if (
       event.messageReply &&
       event.messageReply.attachments &&
       event.messageReply.attachments[0] &&
       event.messageReply.attachments[0].url
     ) {
-      const rawImgUrl = event.messageReply.attachments[0].url;
-      const encodedImg = encodeURIComponent(rawImgUrl);
-      apiUrl = `https://smfahim.xyz/gpt1image-ghibli?prompt=${encodedPrompt}&imageUrl=${encodedImg}&ratio=${ratio}&count=1`;
-    } else {
-      apiUrl = `https://smfahim.xyz/gpt1image-ghibli?prompt=${encodedPrompt}&size=${ratio}&n=1&enhance=false&format=b64_json&count=1`;
+      const imgUrl = encodeURIComponent(event.messageReply.attachments[0].url);
+      apiUrl += `&imageUrl=${imgUrl}`;
     }
 
     api.setMessageReaction("⏳", event.messageID, () => {}, true);
@@ -60,26 +59,22 @@ module.exports = {
       const res = await axios.get(apiUrl);
       const data = res.data;
 
-      if (Array.isArray(data) && data[0] && (data[0].url || data[0].b64_json)) {
-        const imageUrl = data[0].url || `data:image/png;base64,${data[0].b64_json}`;
-        const imageStream = await global.utils.getStreamFromURL(imageUrl);
-
-        message.reply("✅ Generation complete. Sending image...", async (err, info) => {
+      if (Array.isArray(data.data) && data.data.length > 0) {
+        for (const img of data.data) {
+          const stream = await global.utils.getStreamFromURL(img.url);
           await message.reply({
             body: `🖼 Prompt: "${promptText}"`,
-            attachment: imageStream
+            attachment: stream
           });
-          message.unsend(info.messageID);
-        });
-
+        }
         api.setMessageReaction("✅", event.messageID, () => {}, true);
       } else {
-        await message.reply("❌ Failed to receive image data from API.");
+        await message.reply("❌ No images returned from API.");
         api.setMessageReaction("❌", event.messageID, () => {}, true);
       }
     } catch (err) {
-      console.error("o1 Command Error:", err.message);
-      await message.reply("❌ An error occurred while generating the image.");
+      console.error("o1 command error:", err);
+      await message.reply("❌ Failed to generate image.");
       api.setMessageReaction("❌", event.messageID, () => {}, true);
     }
   }
