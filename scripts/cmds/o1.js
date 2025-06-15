@@ -45,7 +45,7 @@ Examples:
         const r = args[++i];
         if (["1:1", "2:3", "3:2"].includes(r)) ratio = r;
         else return message.reply("⚠️ --ar must be one of: 1:1, 2:3, 3:2.");
-      } else if (arg === "--custom" || args === "--cref") {
+      } else if (arg === "--custom" || arg === "--cref") {
         if (!args[i + 1] || args[i + 1].startsWith("--")) {
           return message.reply("⚠️ Please provide a valid image URL after `--custom`/`--cref`.");
         }
