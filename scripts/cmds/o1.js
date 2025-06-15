@@ -4,7 +4,7 @@ module.exports = {
   config: {
     name: "o1",
     version: "1.6",
-    author: "Team Calyx",
+    author: "S M Fahim",
     countDown: 10,
     role: 0,
     longDescription: {
