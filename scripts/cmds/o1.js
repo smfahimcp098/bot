@@ -3,10 +3,10 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "o1",
-    version: "1.8",
+    version: "1.7",
     author: "S M Fahim",
     countDown: 10,
-    role: 2,
+    role: 0,
     longDescription: {
       en: "Generate Ghibli-style images. Supports reply-image, --count/--n, --ar, --custom <url>, and --fahim."
     },
@@ -31,7 +31,7 @@ Examples:
     let useFahimImage = false;
     const promptParts = [];
 
-    const fahimDefaultUrl = "https://i.ibb.co/TMFBvqyQ/1977e749b4d.png";
+    const fahimDefaultUrl = "https://i.postimg.cc/Bn6NbyD3/1709560207712-3.jpg";
 
     // Parse args
     for (let i = 0; i < args.length; i++) {
