@@ -31,7 +31,7 @@ Examples:
     let useFahimImage = false;
     const promptParts = [];
 
-    const fahimDefaultUrl = "https://i.ibb.co/zTphWRwT/1977e7438e2.png";
+    const fahimDefaultUrl = "https://i.ibb.co/TMFBvqyQ/1977e749b4d.png";
 
     // Parse args
     for (let i = 0; i < args.length; i++) {
