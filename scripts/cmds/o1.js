@@ -3,10 +3,10 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "o1",
-    version: "1.6",
+    version: "1.8",
     author: "S M Fahim",
     countDown: 10,
-    role: 0,
+    role: 2,
     longDescription: {
       en: "Generate Ghibli-style images. Supports reply-image, --count/--n, --ar, --custom <url>, and --fahim."
     },
@@ -26,15 +26,14 @@ Examples:
     if (!args.length) return message.reply("⚠️ Please provide a prompt.");
 
     let count = 1;
-    let ratio = "1:1"; // default ratio
+    let ratio = "1:1";
     let customImageUrl = null;
     let useFahimImage = false;
     const promptParts = [];
 
-    // Default fahim image URL
-    const fahimDefaultUrl = "https://i.postimg.cc/Bn6NbyD3/1709560207712-3.jpg";
+    const fahimDefaultUrl = "https://i.ibb.co/zTphWRwT/1977e7438e2.png";
 
-    // Parse arguments
+    // Parse args
     for (let i = 0; i < args.length; i++) {
       const arg = args[i].toLowerCase();
       if ((arg === "--count" || arg === "--n") && args[i + 1]) {
@@ -60,32 +59,39 @@ Examples:
     const promptText = promptParts.join(" ").trim();
     if (!promptText) return message.reply("⚠️ Please provide a valid prompt.");
 
-    // Map ratio to actual size string for the API
     const ratioToSize = {
       "1:1": "1024x1024",
       "2:3": "1024x1536",
       "3:2": "1536x1024"
     };
-
     const size = ratioToSize[ratio] || "1024x1024";
 
-    // Construct URL
     let url = `https://smfahim.xyz/gpt1image-ghibli?prompt=${encodeURIComponent(promptText)}&size=${encodeURIComponent(size)}&n=${count}`;
 
-    // Image URL priority: --custom > --fahim > reply-image
+    // Priority: --custom > --fahim + reply-images
+    let imageUrls = [];
+
     if (customImageUrl) {
-      url += `&imageUrl=${encodeURIComponent(customImageUrl)}`;
+      imageUrls = [customImageUrl];
     } else if (useFahimImage) {
-      url += `&imageUrl=${encodeURIComponent(fahimDefaultUrl)}`;
-    } else if (event.messageReply?.attachments?.[0]?.url) {
-      url += `&imageUrl=${encodeURIComponent(event.messageReply.attachments[0].url)}`;
+      imageUrls.push(fahimDefaultUrl);
+      const replyAttachments = event.messageReply?.attachments?.filter(a => a.type === "photo") || [];
+      imageUrls.push(...replyAttachments.map(a => a.url));
+    } else {
+      const replyAttachments = event.messageReply?.attachments?.filter(a => a.type === "photo") || [];
+      imageUrls = replyAttachments.map(a => a.url);
+    }
+
+    if (imageUrls.length > 0) {
+      const joined = imageUrls.slice(0, 4).map(encodeURIComponent).join(",");
+      url += `&imageUrl=${joined}`;
     }
 
     api.setMessageReaction("⏳", event.messageID, () => {}, true);
 
     try {
       const res = await axios.get(url);
-      const images = res.data.data;
+      const images = res.data?.data;
 
       if (!Array.isArray(images) || images.length === 0) {
         await message.reply("❌ No image returned from the API.");
@@ -103,7 +109,7 @@ Examples:
 
       api.setMessageReaction("✅", event.messageID, () => {}, true);
     } catch (err) {
-      console.error("o1 error:", err);
+      console.error("o1 error:", err?.response?.data || err.message);
       await message.reply("❌ Failed to generate image. Try again later.");
       api.setMessageReaction("❌", event.messageID, () => {}, true);
     }
