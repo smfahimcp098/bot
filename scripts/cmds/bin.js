@@ -57,7 +57,7 @@ module.exports.onStart = async function ({ api, event, args }) {
   }
 
   try {
-    const saveRedirect = await axios.get("https://pastebin.smfahim.xyz/save", {
+    const saveRedirect = await axios.get("https://cdn.smfahim.xyz/save", {
       maxRedirects: 0,
       validateStatus: (status) => status === 302
     });
@@ -69,7 +69,7 @@ module.exports.onStart = async function ({ api, event, args }) {
     const newId = locationHeader.split("/save/")[1];
 
     await axios.post(
-      "https://pastebin.smfahim.xyz/save",
+      "https://cdn.smfahim.xyz/save",
       {
         bool: true,
         text: code,
@@ -78,8 +78,8 @@ module.exports.onStart = async function ({ api, event, args }) {
       { headers: { "Content-Type": "application/json" } }
     );
 
-    const normalUrl = `https://pastebin.smfahim.xyz/save/${newId}`;
-    const rawUrl    = `https://pastebin.smfahim.xyz/raw/${newId}`;
+    const normalUrl = `https://cdn.smfahim.xyz/save/${newId}`;
+    const rawUrl    = `https://cdn.smfahim.xyz/raw/${newId}`;
 
     return api.sendMessage(
       `✅ Uploaded successfully!\n` +
