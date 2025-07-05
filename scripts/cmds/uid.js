@@ -1,68 +1,118 @@
+/* eslint-disable linebreak-style */
+"use strict";
 
-const { findUid } = global.utils;
-const regExCheckURL = /^(http|https):\/\/[^ "]+$/;
+const axios = require('axios');
+const FormData = require('form-data');
+const { URL } = require('url');
+const log = require('npmlog');
+
+/**
+ * Retrieves Facebook UID from a profile link using two methods:
+ *  - Fast method via traodoisub API
+ *  - Slow method via findids.net API
+ */
+async function findUid(link) {
+  // Helper: fast lookup
+  async function getUIDFast(url) {
+    const form = new FormData();
+    const parsed = new URL(url);
+    form.append('link', parsed.href);
+    try {
+      const { data } = await axios.post('https://id.traodoisub.com/api.php', form, { headers: form.getHeaders() });
+      if (data.error) throw new Error(data.error);
+      return data.id || 'Not found';
+    } catch (err) {
+      log.error('findUid', 'Fast method failed: ' + err.message);
+      throw err;
+    }
+  }
+  // Helper: slow lookup
+  async function getUIDSlow(url) {
+    const form = new FormData();
+    const parsed = new URL(url);
+    form.append('username', parsed.pathname.replace(/\//g, ''));
+    const userAgentList = [ /* ... array of UAs as before ... */ ];
+    const ua = userAgentList[Math.floor(Math.random() * userAgentList.length)];
+    try {
+      const { data } = await axios.post(
+        'https://api.findids.net/api/get-uid-from-username',
+        form,
+        { headers: { 'User-Agent': ua, ...form.getHeaders() } }
+      );
+      if (data.status !== 200) throw new Error(data.error || 'Unknown error');
+      return data.data.id || 'Not found';
+    } catch (err) {
+      log.error('findUid', 'Slow method failed: ' + err.message);
+      throw err;
+    }
+  }
+
+  // Try fast then slow
+  try {
+    let uid = await getUIDFast(link);
+    if (!isNaN(uid)) return uid;
+  } catch (e) {
+    // ignore, try slow
+  }
+  // fallback slow
+  return await getUIDSlow(link);
+}
+
+const regExCheckURL = /^(http|https):\/\/[^ \"\']+$/;
 
 module.exports = {
   config: {
-    name: "uid",
-    version: "1.2",
-    author: "NTKhang",
+    name: 'uid',
+    version: '1.2',
+    author: 'NTKhang & Fahim',
     countDown: 5,
     role: 0,
     shortDescription: {
-      vi: "Xem uid",
-      en: "View uid"
+      vi: 'Xem uid',
+      en: 'View uid'
     },
     longDescription: {
-      vi: "Xem user id facebook của người dùng",
-      en: "View facebook user id of user"
+      vi: 'Xem user id facebook của người dùng',
+      en: 'View facebook user id of user'
     },
-    category: "info",
+    category: 'info',
     guide: {
-      vi: "   {pn}: dùng để xem id facebook của bạn"
-        + "\n   {pn} @tag: xem id facebook của những người được tag"
-        + "\n   {pn} <link profile>: xem id facebook của link profile"
-        + "\n   Phản hồi tin nhắn của người khác kèm lệnh để xem id facebook của họ",
-      en: "   {pn}: use to view your facebook user id"
-        + "\n   {pn} @tag: view facebook user id of tagged people"
-        + "\n   {pn} <profile link>: view facebook user id of profile link"
-        + "\n   Reply to someone's message with the command to view their facebook user id"
-    }
-  },
-
-  langs: {
-    vi: {
-      syntaxError: "Vui lòng tag người muốn xem uid hoặc để trống để xem uid của bản thân"
-    },
-    en: {
-      syntaxError: "Please tag the person you want to view uid or leave it blank to view your own uid"
+      vi: '{pn}: để xem uid của bạn\n{pn} @tag: xem uid của người được tag\n{pn} <link>: xem uid từ link profile',
+      en: '{pn}: view your uid\n{pn} @tag: view uid of tagged user\n{pn} <link>: view uid from profile link'
     }
   },
 
   onStart: async function ({ message, event, args, getLang }) {
-    if (event.messageReply)
-      return message.reply(event.messageReply.senderID);
-    if (!args[0])
-      return message.reply(event.senderID);
-    if (args[0].match(regExCheckURL)) {
-      let msg = '';
-      for (const link of args) {
-        try {
-          const uid = await findUid(link);
-          msg += `${link} => ${uid}\n`;
-        }
-        catch (e) {
-          msg += `${link} (ERROR) => ${e.message}\n`;
-        }
+    try {
+      // Reply to message: direct ID
+      if (event.messageReply) {
+        return message.reply(event.messageReply.senderID);
       }
-      message.reply(msg);
-      return;
+      // No args: self
+      if (!args[0]) {
+        return message.reply(event.senderID);
+      }
+      // URLs
+      if (args[0].match(regExCheckURL)) {
+        let responses = '';
+        for (const link of args) {
+          try {
+            const uid = await findUid(link);
+            responses += `${link} => ${uid}\n`;
+          } catch (err) {
+            responses += `${link} (ERROR) => ${err.message}\n`;
+          }
+        }
+        return message.reply(responses.trim());
+      }
+      // Mentions
+      const { mentions } = event;
+      let reply = Object.keys(mentions).join('\n');
+      if (!reply) reply = getLang('syntaxError');
+      return message.reply(reply);
+    } catch (err) {
+      log.error('uid', err);
+      message.reply('Đã xảy ra lỗi: ' + err.message);
     }
-
-    let msg = "";
-    const { mentions } = event;
-    for (const id in mentions)
-      msg += `${id}\n`;
-    message.reply(msg || getLang("syntaxError"));
   }
 };
